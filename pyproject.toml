@@ -53,7 +53,12 @@ select = ["E", "W", "F", "I", "UP", "B", "SIM", "N"]
 known-first-party = ["docsync"]
 
 [dependency-groups]
-dev = ["pytest>=8.0", "pytest-cov>=4.0", "ruff>=0.4"]
+dev = [
+    "commitizen>=4.13.9",
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
 
 
 [tool.docsync]

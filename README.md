@@ -188,7 +188,50 @@ uv run ruff format .
 # Install pre-commit hooks (recommended)
 pip install pre-commit
 pre-commit install
+pre-commit install --hook-type commit-msg
 ```
+
+### Commit Convention
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) enforced by [Commitizen](https://commitizen-tools.github.io/commitizen/).
+
+Commit message format:
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `chore`
+
+Examples:
+```bash
+git commit -m "feat(cli): add list-stale command with JSON output"
+git commit -m "fix(cache): handle git errors gracefully"
+git commit -m "docs: update installation instructions"
+```
+
+### Versioning and Releases
+
+Use commitizen to bump versions:
+```bash
+# Bump version and create changelog
+uv run cz bump
+
+# Bump to specific version
+uv run cz bump --increment MAJOR|MINOR|PATCH
+
+# Dry run
+uv run cz bump --dry-run
+```
+
+This will:
+- Update version in `pyproject.toml` and `.cz.toml`
+- Generate/update `CHANGELOG.md`
+- Create a git tag
+- Commit the changes
 
 ### Testing
 
@@ -213,7 +256,8 @@ uv run pytest -v
 
 - **GitHub Actions**: Runs tests, linting, formatting on Python 3.11 and 3.12
 - **Dependabot**: Weekly dependency updates (grouped in single PR)
-- **Pre-commit hooks**: Enforces formatting, linting, and 70% coverage threshold
+- **Pre-commit hooks**: Enforces conventional commits, formatting, linting, and 70% coverage threshold
+- **Semantic versioning**: Automated via commitizen with changelog generation
 
 ## How It Works
 
