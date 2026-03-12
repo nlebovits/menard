@@ -176,12 +176,44 @@ git clone https://github.com/nlebovits/docsync.git
 cd docsync
 uv sync
 
-# Run tests
-uv run pytest
+# Run tests with coverage
+uv run pytest --cov=src/docsync --cov-report=term
 
 # Run linting
 uv run ruff check .
+
+# Run formatter
+uv run ruff format .
+
+# Install pre-commit hooks (recommended)
+pip install pre-commit
+pre-commit install
 ```
+
+### Testing
+
+The project has comprehensive test coverage (70%+) including:
+- Unit tests for all core modules
+- Integration tests for end-to-end workflows  
+- CLI command tests via subprocess
+
+Run specific test suites:
+```bash
+# Unit tests only
+uv run pytest tests/test_*.py -k "not integration"
+
+# Integration tests only
+uv run pytest tests/test_integration*.py
+
+# With verbose output
+uv run pytest -v
+```
+
+### CI/CD
+
+- **GitHub Actions**: Runs tests, linting, formatting on Python 3.11 and 3.12
+- **Dependabot**: Weekly dependency updates (grouped in single PR)
+- **Pre-commit hooks**: Enforces formatting, linting, and 70% coverage threshold
 
 ## How It Works
 

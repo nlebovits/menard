@@ -1,0 +1,24 @@
+# Pre-commit hooks for docsync
+# Install: pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Run the formatter
+      - id: ruff-format
+      
+      # Run the linter
+      - id: ruff
+        args: [--fix]
+
+  - repo: local
+    hooks:
+      # Run tests with coverage check
+      - id: pytest-coverage
+        name: pytest with coverage
+        entry: uv run pytest --cov=src/docsync --cov-fail-under=70 -q
+        language: system
+        pass_filenames: false
+        always_run: true
