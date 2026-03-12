@@ -2,7 +2,6 @@
 
 import json
 import subprocess
-from pathlib import Path
 
 
 def setup_git_repo(tmp_path):
@@ -90,9 +89,7 @@ require_links = ["src/**/*.py"]
     # Modify code to make doc stale
     code.write_text("# docsync: docs/doc.md\ndef foo():\n    return 42\n")
     subprocess.run(["git", "add", str(code)], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True)
 
     result = subprocess.run(
         ["docsync", "list-stale"],
@@ -272,9 +269,7 @@ doc_globs = ["docs/**/*.md"]
 
     code.write_text("# docsync: docs/doc.md\ndef foo():\n    return 42\n")
     subprocess.run(["git", "add", str(code)], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True)
 
     result = subprocess.run(
         ["docsync", "explain-changes", "docs/doc.md"],

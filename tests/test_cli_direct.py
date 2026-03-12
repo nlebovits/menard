@@ -3,7 +3,6 @@
 import json
 import subprocess
 from argparse import Namespace
-from pathlib import Path
 
 from docsync.cli import (
     cmd_add_link,
@@ -331,9 +330,7 @@ def test_cmd_list_stale_no_stale_docs(tmp_path, monkeypatch, capsys):
     (docs / "doc.md").write_text("<!-- docsync: src/code.py -->\n")
 
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True)
 
     args = Namespace(pattern=None, format="text")
     result = cmd_list_stale(args)
@@ -354,16 +351,12 @@ def test_cmd_explain_changes_shows_reason(tmp_path, monkeypatch, capsys):
     doc.write_text("<!-- docsync: src/code.py -->\n# Docs\n")
 
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, check=True, capture_output=True)
 
     # Modify code
     code.write_text("# docsync: docs/doc.md\ndef foo():\n    return 42\n")
     subprocess.run(["git", "add", str(code)], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "update"], cwd=tmp_path, check=True, capture_output=True)
 
     args = Namespace(file="docs/doc.md", format="text")
     result = cmd_explain_changes(args)

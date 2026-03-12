@@ -1,9 +1,6 @@
 """Additional tests to reach 80%+ coverage by testing uncovered edge cases."""
 
 import subprocess
-from pathlib import Path
-
-import pytest
 
 
 # Tests for cache.py edge cases
@@ -57,7 +54,7 @@ doc_globs = ["docs/**/*.md"]
 """
     )
 
-    config = load_config(tmp_path)
+    load_config(tmp_path)
     report = generate_coverage(tmp_path)
     assert report is not None
 
@@ -78,12 +75,12 @@ doc_globs = ["docs/**/*.md"]
 """
     )
 
-    config = load_config(tmp_path)
+    load_config(tmp_path)
     report = generate_coverage(tmp_path)
     assert report is not None
 
 
-# Tests for graph.py edge cases  
+# Tests for graph.py edge cases
 def test_graph_with_invalid_syntax(tmp_path, monkeypatch):
     """Test graph building with files containing invalid docsync syntax."""
     monkeypatch.chdir(tmp_path)
@@ -251,7 +248,11 @@ def test_cli_version_flag():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0 or "docsync" in result.stdout.lower() or "version" in result.stdout.lower()
+    assert (
+        result.returncode == 0
+        or "docsync" in result.stdout.lower()
+        or "version" in result.stdout.lower()
+    )
 
 
 def test_cli_help_flag():

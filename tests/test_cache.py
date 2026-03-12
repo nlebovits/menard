@@ -44,7 +44,7 @@ def test_cache_invalidation_when_file_changes(tmp_path: Path, monkeypatch):
 
     # Cache should be invalid (but load might still return stale data in filesystem mode)
     # This is expected behavior - filesystem mode uses mtime which may not change instantly
-    loaded = load_import_graph_cache(tmp_path)
+    _ = load_import_graph_cache(tmp_path)
     # In a real scenario, git hash would detect this change
 
 

@@ -178,8 +178,7 @@ def cmd_check(args: argparse.Namespace) -> int:
         output = {
             "status": "passed" if result.passed else "blocked",
             "direct_deps": [
-                {"code": code, "docs": list(docs)}
-                for code, docs in result.direct_missing.items()
+                {"code": code, "docs": list(docs)} for code, docs in result.direct_missing.items()
             ],
             "transitive_deps": [
                 {
@@ -263,7 +262,9 @@ def cmd_coverage(args: argparse.Namespace) -> int:
                     "severity": (
                         "critical"
                         if days_stale > 90
-                        else "warning" if days_stale > 30 else "recent"
+                        else "warning"
+                        if days_stale > 30
+                        else "recent"
                     ),
                 }
                 for doc_file, code_file, doc_ts, code_ts, days_stale in stale_docs
@@ -272,9 +273,7 @@ def cmd_coverage(args: argparse.Namespace) -> int:
                 "total_links": len(links),
                 "stale_count": len(stale_docs),
                 "critical_stale": sum(1 for _, _, _, _, days in stale_docs if days > 90),
-                "warning_stale": sum(
-                    1 for _, _, _, _, days in stale_docs if 30 < days <= 90
-                ),
+                "warning_stale": sum(1 for _, _, _, _, days in stale_docs if 30 < days <= 90),
             },
         }
         print(json.dumps(output, indent=2))
@@ -714,9 +713,7 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
                 "code_timestamp": code_ts,
                 "days_stale": days_stale,
                 "severity": (
-                    "critical"
-                    if days_stale > 90
-                    else "warning" if days_stale > 30 else "recent"
+                    "critical" if days_stale > 90 else "warning" if days_stale > 30 else "recent"
                 ),
             }
             for doc_file, code_file, doc_ts, code_ts, days_stale in stale_docs
@@ -733,7 +730,9 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
             severity = (
                 "⚠️ CRITICAL"
                 if days_stale > 90
-                else "⚠️  WARNING" if days_stale > 30 else "ℹ️  RECENT"
+                else "⚠️  WARNING"
+                if days_stale > 30
+                else "ℹ️  RECENT"
             )
             print(f"{severity} {doc_file}")
             print(f"  Linked to: {code_file}")
@@ -887,9 +886,7 @@ def cmd_info(args: argparse.Namespace) -> int:
             "file": code_file,
             "timestamp": code_timestamp,
             "last_modified": (
-                datetime.fromtimestamp(code_timestamp).isoformat()
-                if code_timestamp
-                else None
+                datetime.fromtimestamp(code_timestamp).isoformat() if code_timestamp else None
             ),
             "linked_docs": linked_docs,
             "imports": imports,
@@ -902,7 +899,9 @@ def cmd_info(args: argparse.Namespace) -> int:
                     "severity": (
                         "critical"
                         if days_stale > 90
-                        else "warning" if days_stale > 30 else "recent"
+                        else "warning"
+                        if days_stale > 30
+                        else "recent"
                     ),
                 }
                 for doc_file, doc_ts, code_ts, days_stale in stale_for_this_file
@@ -915,9 +914,7 @@ def cmd_info(args: argparse.Namespace) -> int:
 
         print(f"File: {code_file}")
         if code_timestamp:
-            timestamp_str = datetime.fromtimestamp(code_timestamp).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            timestamp_str = datetime.fromtimestamp(code_timestamp).strftime("%Y-%m-%d %H:%M:%S")
             print(f"Last modified: {timestamp_str}")
         print()
 
@@ -944,11 +941,11 @@ def cmd_info(args: argparse.Namespace) -> int:
                 severity = (
                     "⚠️ CRITICAL"
                     if days_stale > 90
-                    else "⚠️  WARNING" if days_stale > 30 else "ℹ️  RECENT"
+                    else "⚠️  WARNING"
+                    if days_stale > 30
+                    else "ℹ️  RECENT"
                 )
-                print(
-                    f"  {severity} {doc_file} ({days_stale} days stale, last updated {doc_date})"
-                )
+                print(f"  {severity} {doc_file} ({days_stale} days stale, last updated {doc_date})")
         else:
             print("No stale docs for this file.")
 
@@ -1030,9 +1027,7 @@ def cmd_explain_changes(args: argparse.Namespace) -> int:
     commits = result.stdout.strip().split("\n") if result.stdout.strip() else []
 
     if not commits:
-        print(
-            f"No changes to {code_file} since {doc_file} was last updated ({doc_date})"
-        )
+        print(f"No changes to {code_file} since {doc_file} was last updated ({doc_date})")
         return 0
 
     # Get unified diff for the time range
@@ -1076,9 +1071,7 @@ def cmd_explain_changes(args: argparse.Namespace) -> int:
     functions_removed -= truly_modified
     functions_modified.update(truly_modified)
 
-    print(
-        f"Changes to {code_file} since {doc_file} was last updated ({doc_date}):\n"
-    )
+    print(f"Changes to {code_file} since {doc_file} was last updated ({doc_date}):\n")
     print(f"Commits: {len(commits)}")
 
     if functions_modified:
@@ -1209,9 +1202,7 @@ def cmd_list_deferred(args: argparse.Namespace) -> int:
 
         print(f"Deferred updates ({len(deferrals)}):\n")
         for code_file, info in deferrals.items():
-            deferred_at = datetime.fromisoformat(info["deferred_at"]).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            deferred_at = datetime.fromisoformat(info["deferred_at"]).strftime("%Y-%m-%d %H:%M:%S")
             print(f"• {code_file}")
             print(f"  Message: {info['message']}")
             print(f"  Deferred at: {deferred_at}\n")
@@ -1316,9 +1307,7 @@ def main() -> int:
     defer_parser = subparsers.add_parser("defer", help="Defer doc updates temporarily")
     defer_parser.add_argument("file", help="File to defer")
     defer_parser.add_argument("--message", "-m", help="Reason for deferring")
-    defer_parser.add_argument(
-        "--clear", action="store_true", help="Clear deferral for this file"
-    )
+    defer_parser.add_argument("--clear", action="store_true", help="Clear deferral for this file")
 
     # list-deferred command
     subparsers.add_parser("list-deferred", help="List all deferred updates")

@@ -92,9 +92,7 @@ def load_import_graph_cache(repo_root: Path) -> dict[str, set[str]] | None:
         return None
 
 
-def save_import_graph_cache(
-    repo_root: Path, graph: dict[str, set[str]]
-) -> None:
+def save_import_graph_cache(repo_root: Path, graph: dict[str, set[str]]) -> None:
     """Save import graph to cache."""
     cache_dir = get_cache_dir(repo_root)
     cache_file = cache_dir / "import_graph.json"

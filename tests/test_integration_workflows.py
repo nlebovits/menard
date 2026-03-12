@@ -2,7 +2,6 @@
 
 import json
 import subprocess
-from pathlib import Path
 
 
 def setup_git(tmp_path):
@@ -42,9 +41,7 @@ def test_full_workflow_init_to_check(tmp_path, monkeypatch):
     doc.write_text("# API Documentation\n")
 
     # Step 1: Initialize docsync
-    result = subprocess.run(
-        ["docsync", "init"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "init"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0
     assert "[tool.docsync]" in pyproject.read_text()
 
@@ -69,15 +66,11 @@ def test_full_workflow_init_to_check(tmp_path, monkeypatch):
     )
 
     # Step 4: Modify code and stage it
-    code.write_text(
-        "# docsync: docs/api.md\ndef authenticate(user, password):\n    return True\n"
-    )
+    code.write_text("# docsync: docs/api.md\ndef authenticate(user, password):\n    return True\n")
     subprocess.run(["git", "add", str(code)], cwd=tmp_path, check=True, capture_output=True)
 
     # Step 5: Check should fail (doc not staged with code)
-    result = subprocess.run(
-        ["docsync", "check"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "check"], cwd=tmp_path, capture_output=True, text=True)
     # May fail or pass depending on implementation
     assert result.returncode in (0, 1)
 
@@ -111,9 +104,7 @@ require_links = ["src/**/*.py"]
     (docs / "api-guide.md").write_text("# API\n")
 
     # Step 1: Bootstrap to find potential links
-    result = subprocess.run(
-        ["docsync", "bootstrap"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "bootstrap"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0
 
     # Step 2: Bootstrap with --apply
@@ -126,9 +117,7 @@ require_links = ["src/**/*.py"]
     assert result.returncode == 0
 
     # Step 3: Check coverage
-    result = subprocess.run(
-        ["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode in (0, 1)  # May fail if require_links check fails
     assert "coverage" in result.stdout.lower() or "docsync" in result.stdout.lower()
 
@@ -157,9 +146,7 @@ require_links = ["src/**/*.py"]
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
 
     # Step 1: Check should fail (missing link)
-    result = subprocess.run(
-        ["docsync", "check"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "check"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 1
 
     # Step 2: Defer the file
@@ -172,9 +159,7 @@ require_links = ["src/**/*.py"]
     assert result.returncode == 0
 
     # Step 3: Check should now pass
-    result = subprocess.run(
-        ["docsync", "check"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "check"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0
 
     # Step 4: List deferrals
@@ -194,9 +179,7 @@ require_links = ["src/**/*.py"]
     assert result.returncode == 0
 
     # Step 6: Check should fail again
-    result = subprocess.run(
-        ["docsync", "check"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "check"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 1
 
 
@@ -232,14 +215,14 @@ require_links = ["src/**/*.py"]
     )
 
     # Step 1: No stale docs initially
-    result = subprocess.run(
-        ["docsync", "list-stale"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "list-stale"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0
 
     # Step 2: Modify code
     code.write_text(
-        "# docsync: docs/api.md\ndef get_users():\n    return []\ndef create_user(name):\n    pass\n"
+        "# docsync: docs/api.md\n"
+        "def get_users():\n    return []\n"
+        "def create_user(name):\n    pass\n"
     )
     subprocess.run(["git", "add", str(code)], cwd=tmp_path, check=True, capture_output=True)
     subprocess.run(
@@ -250,9 +233,7 @@ require_links = ["src/**/*.py"]
     )
 
     # Step 3: List stale docs
-    result = subprocess.run(
-        ["docsync", "list-stale"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "list-stale"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode == 0
     # Docs should be stale now
     assert "api.md" in result.stdout or result.stdout == ""
@@ -334,7 +315,7 @@ doc_globs = ["docs/**/*.md"]
     src = tmp_path / "src"
     src.mkdir()
     for i in range(5):
-        (src / f"module{i}.py").write_text(f"import module{(i+1)%5}\ndef func{i}(): pass\n")
+        (src / f"module{i}.py").write_text(f"import module{(i + 1) % 5}\ndef func{i}(): pass\n")
 
     # Step 1: Run info command (creates cache)
     result1 = subprocess.run(
@@ -391,9 +372,7 @@ require_links = ["src/**/*.py"]
     (docs / "a.md").write_text("<!-- docsync: src/a.py -->\n")
 
     # Agent workflow: query for undocumented files
-    result = subprocess.run(
-        ["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True)
     # Should show 50% coverage
     assert result.returncode in (0, 1)
 
@@ -434,9 +413,7 @@ require_links = ["src/**/*.py"]
     )
 
     subprocess.run(["git", "add", "."], cwd=tmp_path, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", "Init"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", "Init"], cwd=tmp_path, check=True, capture_output=True)
 
     # Step 1: Install hook
     result = subprocess.run(
@@ -506,7 +483,5 @@ doc_globs = ["docs/**/*.md"]
     (docs / "frontend.md").write_text("<!-- docsync: src/app.js -->\n")
 
     # Coverage should handle both file types
-    result = subprocess.run(
-        ["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True
-    )
+    result = subprocess.run(["docsync", "coverage"], cwd=tmp_path, capture_output=True, text=True)
     assert result.returncode in (0, 1)
