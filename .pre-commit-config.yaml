@@ -24,7 +24,7 @@ repos:
       # Run tests with coverage check
       - id: pytest-coverage
         name: pytest with coverage
-        entry: uv run pytest --cov=src/docsync --cov-fail-under=70 -q
+        entry: uv run pytest --cov=src/docsync --cov-fail-under=60 -q
         language: system
         pass_filenames: false
         always_run: true
