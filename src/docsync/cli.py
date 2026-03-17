@@ -291,8 +291,29 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
     return 0
 
 
+def _count_all_stale_docs(repo_root: Path, config, graph: dict, import_graph: dict) -> int:
+    """Count total stale docs across entire repo (for hint in check command)."""
+    code_files = {k for k in graph if not any(k.endswith(ext) for ext in [".md", ".rst"])}
+    stale_count = 0
+
+    for code_file in code_files:
+        doc_targets = get_linked_docs(code_file, graph, config)
+
+        transitive_imports = []
+        if config.transitive_depth > 0 and code_file in import_graph:
+            transitive_imports = list(import_graph[code_file])
+
+        for doc_target_str in doc_targets:
+            target = LinkTarget.parse(doc_target_str)
+            is_stale, _ = is_doc_stale(repo_root, code_file, target, transitive_imports)
+            if is_stale:
+                stale_count += 1
+
+    return stale_count
+
+
 def cmd_check(args: argparse.Namespace) -> int:
-    """Check if docs are stale for staged/specified files."""
+    """Check if docs linked to staged/specified files are stale (CI/pre-commit mode)."""
     repo_root = Path.cwd()
     config = load_config(repo_root)
 
@@ -365,7 +386,19 @@ def cmd_check(args: argparse.Namespace) -> int:
                 )
 
     if not stale_items:
-        print("✓ All documentation is up to date")
+        # Check passes - but hint if there are stale docs elsewhere
+        if args.format != "json":
+            total_stale = _count_all_stale_docs(repo_root, config, graph, import_graph)
+            if total_stale > 0:
+                print("✓ Staged files have up-to-date documentation")
+                print(
+                    f"  Hint: {total_stale} stale doc(s) exist elsewhere. "
+                    "Run 'docsync list-stale' for full audit."
+                )
+            else:
+                print("✓ All documentation is up to date")
+        else:
+            print(json.dumps({"stale": []}, indent=2))
         return 0
 
     # Report stale docs
@@ -388,7 +421,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_list_stale(args: argparse.Namespace) -> int:
-    """List all stale documentation."""
+    """List all stale documentation across the entire repository (audit mode)."""
     repo_root = Path.cwd()
     config = load_config(repo_root)
 
@@ -731,14 +764,30 @@ def main() -> int:
     bootstrap_parser.add_argument("--apply", action="store_true", help="Apply proposed links")
 
     # check
-    check_parser = subparsers.add_parser("check", help="Check if docs are stale")
+    check_parser = subparsers.add_parser(
+        "check",
+        help="Check staged files for doc freshness (CI/pre-commit)",
+        description=(
+            "Check if documentation linked to staged files is stale. "
+            "Use this for pre-commit hooks and CI pipelines. "
+            "To audit ALL stale docs regardless of staged changes, use 'list-stale'."
+        ),
+    )
     check_parser.add_argument("--staged-files", help="Comma-separated list of files")
     check_parser.add_argument(
         "--format", choices=["text", "json"], default="text", help="Output format"
     )
 
     # list-stale
-    stale_parser = subparsers.add_parser("list-stale", help="List all stale docs")
+    stale_parser = subparsers.add_parser(
+        "list-stale",
+        help="List ALL stale docs regardless of recent changes (audit)",
+        description=(
+            "Scan the entire repository and list all stale documentation. "
+            "Use this for audits and periodic reviews. "
+            "For pre-commit/CI checks on staged files only, use 'check'."
+        ),
+    )
     stale_parser.add_argument(
         "--format", choices=["text", "paths", "json"], default="text", help="Output format"
     )
