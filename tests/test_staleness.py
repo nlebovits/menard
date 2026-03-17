@@ -30,9 +30,7 @@ def _git_init_and_commit(repo_root: Path, files: dict[str, str], message: str):
         full_path.write_text(content)
 
     subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", message], cwd=repo_root, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", message], cwd=repo_root, check=True, capture_output=True)
 
 
 def test_is_doc_stale_whole_file_fresh():

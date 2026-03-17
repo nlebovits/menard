@@ -25,9 +25,7 @@ def _git_init(repo_root: Path):
 def _git_commit(repo_root: Path, message: str):
     """Stage all files and commit."""
     subprocess.run(["git", "add", "."], cwd=repo_root, check=True, capture_output=True)
-    subprocess.run(
-        ["git", "commit", "-m", message], cwd=repo_root, check=True, capture_output=True
-    )
+    subprocess.run(["git", "commit", "-m", message], cwd=repo_root, check=True, capture_output=True)
 
 
 def test_full_workflow_with_sections():

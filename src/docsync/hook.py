@@ -163,9 +163,7 @@ def _matches_require_links(file_path: str, config, repo_root: Path) -> bool:
     return _match_globs(file, config.require_links, repo_root)
 
 
-def _format_message(
-    config, stale_docs: list[dict], missing_links: list[str], passed: bool
-) -> str:
+def _format_message(config, stale_docs: list[dict], missing_links: list[str], passed: bool) -> str:
     """Format the output message."""
     if not stale_docs and not missing_links:
         return "docsync: ✓ all documentation is up to date"

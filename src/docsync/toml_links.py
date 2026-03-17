@@ -1,6 +1,5 @@
 """TOML link file parsing and validation."""
 
-import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,7 +50,7 @@ def load_links(repo_root: Path) -> list[Link]:
         with open(links_file, "rb") as f:
             data = tomllib.load(f)
     except Exception as e:
-        raise ValueError(f"Failed to parse {links_file}: {e}")
+        raise ValueError(f"Failed to parse {links_file}: {e}") from e
 
     # Parse link entries
     links = []
@@ -97,7 +96,7 @@ def validate_links(links: list[Link], repo_root: Path) -> list[str]:
 
             # Check section exists if specified
             if doc_target.section:
-                from docsync.sections import section_exists, list_sections
+                from docsync.sections import list_sections, section_exists
 
                 if not section_exists(doc_path, doc_target.section):
                     available = list_sections(doc_path)
