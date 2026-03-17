@@ -232,3 +232,101 @@ def test_violation_to_dict():
         "section": "License",
         "reason": "Section is protected",
     }
+
+
+def test_whitespace_normalization(tmp_path):
+    """Should normalize whitespace in literal comparison."""
+    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch.parent.mkdir(parents=True)
+    donttouch.write_text('README.md: "Apache 2.0 License"\n')
+
+    # Initialize git repo
+    subprocess.run(["git", "init"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Test"], cwd=tmp_path, check=True, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    # Create README with normal whitespace
+    readme = tmp_path / "README.md"
+    readme.write_text("Apache 2.0 License\n")
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "Initial", "--no-verify"],
+        cwd=tmp_path,
+        check=True,
+        capture_output=True,
+    )
+
+    # Modify with extra whitespace (should still be protected due to normalization)
+    readme.write_text("Apache  2.0  License\n")  # Double spaces
+    subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True, capture_output=True)
+
+    rules = load_donttouch(tmp_path)
+    # Should NOT violate because whitespace is normalized
+    violations = check_protections(tmp_path, ["README.md"], rules)
+    assert len(violations) == 0
+
+
+def test_path_traversal_rejection(tmp_path, capsys):
+    """Should reject path traversal attempts."""
+    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch.parent.mkdir(parents=True)
+    donttouch.write_text("../../etc/passwd\n../../../secrets\n/etc/shadow\n")
+
+    rules = load_donttouch(tmp_path)
+    captured = capsys.readouterr()
+    
+    # Should have warnings
+    assert "path traversal" in captured.err
+    # Should not add any patterns
+    assert len(rules.file_pattern_strings) == 0
+
+
+def test_line_length_limit(tmp_path, capsys):
+    """Should reject lines exceeding MAX_LINE_LENGTH."""
+    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch.parent.mkdir(parents=True)
+    
+    # Create a line that's too long
+    long_line = "A" * 20000  # 20KB
+    donttouch.write_text(f"{long_line}\nLICENSE\n")
+
+    rules = load_donttouch(tmp_path)
+    captured = capsys.readouterr()
+    
+    # Should have warning about long line
+    assert "line too long" in captured.err
+    # Should still process valid lines
+    assert "LICENSE" in rules.file_pattern_strings
+
+
+def test_parse_error_handling(tmp_path, capsys):
+    """Should handle file read errors gracefully."""
+    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch.parent.mkdir(parents=True)
+    
+    # Create file with invalid UTF-8
+    donttouch.write_bytes(b"LICENSE\n\xff\xfe\nREADME.md\n")
+
+    rules = load_donttouch(tmp_path)
+    captured = capsys.readouterr()
+    
+    # Should return None and print error
+    assert rules is None
+    assert "invalid UTF-8" in captured.err
+
+
+def test_empty_literal_rejection(tmp_path):
+    """Should reject empty literals."""
+    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch.parent.mkdir(parents=True)
+    donttouch.write_text('""')
+
+    rules = load_donttouch(tmp_path)
+    assert len(rules.global_literals) == 0

@@ -1,5 +1,12 @@
 # Protected content guard configuration
 # Lines starting with # are comments
+#
+# Security features:
+# - Path traversal prevention (.. and / paths rejected)
+# - Line length limits (10KB max per line)
+# - UTF-8 validation with clear error messages
+# - Whitespace-normalized literal matching (prevents trivial bypasses)
+# - Section validation (warns if section doesn't exist)
 
 # Protect entire files or directories (gitignore-style patterns)
 LICENSE
@@ -7,11 +14,16 @@ LICENSE
 .github/workflows/
 
 # Protect specific markdown sections (file#section)
+# Note: Only works for Markdown files (.md)
+# Warns if section name doesn't exist
 README.md#License
 README.md#Contributing
 
 # Protect strings within specific files (file: "string")
+# Whitespace is normalized for comparison
 pyproject.toml: "Apache-2.0"
 
 # Protect strings globally (must exist somewhere, can't be removed)
+# Format: "exact string to protect"
+# Whitespace is normalized for comparison
 "Apache 2.0 - see LICENSE for details"

@@ -8,5 +8,5 @@ LICENSE
 # Protect specific markdown sections (file#section)
 README.md#License
 
-# Protect the exact Apache 2.0 line in README
+# Protect the exact Apache 2.0 line in README (whitespace-normalized)
 README.md: "Apache 2.0 - see [LICENSE](LICENSE) for details."

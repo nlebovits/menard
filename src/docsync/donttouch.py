@@ -2,10 +2,14 @@
 
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import pathspec
+
+# Security limits
+MAX_LINE_LENGTH = 10_000  # 10KB per line to prevent DoS
 
 
 @dataclass
@@ -43,22 +47,46 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
     """
     Load and parse .docsync/donttouch file.
     Returns None if file doesn't exist.
+    Prints warnings to stderr if file has errors.
     """
     donttouch_file = repo_root / ".docsync" / "donttouch"
     if not donttouch_file.exists():
         return None
 
+    # Read file with proper error handling
     try:
         content = donttouch_file.read_text(encoding="utf-8")
-    except Exception:
+    except UnicodeDecodeError as e:
+        print(
+            f"⚠️  docsync: {donttouch_file} has invalid UTF-8 encoding: {e}",
+            file=sys.stderr,
+        )
+        return None
+    except PermissionError:
+        print(f"⚠️  docsync: cannot read {donttouch_file}: permission denied", file=sys.stderr)
+        return None
+    except OSError as e:
+        print(f"⚠️  docsync: cannot read {donttouch_file}: {e}", file=sys.stderr)
         return None
 
     file_patterns = []
     section_protections = {}
     global_literals = []
     scoped_literals = {}
+    line_num = 0
 
     for line in content.splitlines():
+        line_num += 1
+        
+        # Security: Check line length to prevent DoS
+        if len(line) > MAX_LINE_LENGTH:
+            print(
+                f"⚠️  docsync: {donttouch_file}:{line_num} line too long "
+                f"({len(line)} bytes, max {MAX_LINE_LENGTH}), skipping",
+                file=sys.stderr,
+            )
+            continue
+        
         line = line.strip()
 
         # Skip comments and empty lines
@@ -71,6 +99,16 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
             if len(parts) == 2:
                 file_path = parts[0].strip()
                 section_name = parts[1].strip()
+                
+                # Security: Prevent path traversal
+                if ".." in file_path or file_path.startswith("/"):
+                    print(
+                        f"⚠️  docsync: {donttouch_file}:{line_num} "
+                        f"path traversal attempt '{file_path}', skipping",
+                        file=sys.stderr,
+                    )
+                    continue
+                
                 if file_path and section_name:
                     if file_path not in section_protections:
                         section_protections[file_path] = []
@@ -83,6 +121,16 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
             if match:
                 file_path = match.group(1).strip()
                 literal = match.group(2)
+                
+                # Security: Prevent path traversal
+                if ".." in file_path or file_path.startswith("/"):
+                    print(
+                        f"⚠️  docsync: {donttouch_file}:{line_num} "
+                        f"path traversal attempt '{file_path}', skipping",
+                        file=sys.stderr,
+                    )
+                    continue
+                
                 if file_path not in scoped_literals:
                     scoped_literals[file_path] = []
                 scoped_literals[file_path].append(literal)
@@ -90,13 +138,25 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
 
         # Global literal: "Apache-2.0"
         if line.startswith('"') and line.endswith('"'):
+            if len(line) < 2:
+                continue  # Empty quotes
             literal = line[1:-1]  # Remove quotes
             # Handle escaped quotes
             literal = literal.replace('\\"', '"')
-            global_literals.append(literal)
+            if literal:  # Don't add empty literals
+                global_literals.append(literal)
             continue
 
         # File/directory/glob pattern
+        # Security: Prevent path traversal
+        if ".." in line or line.startswith("/"):
+            print(
+                f"⚠️  docsync: {donttouch_file}:{line_num} "
+                f"path traversal attempt '{line}', skipping",
+                file=sys.stderr,
+            )
+            continue
+        
         file_patterns.append(line)
 
     # Create PathSpec from patterns using gitignore-style matching
@@ -172,7 +232,11 @@ def _check_section_protection(
         for section_name in protected_sections[file]:
             section_range = parse_markdown_section(repo_root / file, section_name)
             if not section_range:
-                # Section doesn't exist - could warn, but skip for now
+                # Section doesn't exist - warn user
+                print(
+                    f"⚠️  docsync: protected section '{section_name}' not found in {file}",
+                    file=sys.stderr,
+                )
                 continue
 
             # Check if any diff hunk touches this section's line range
@@ -189,13 +253,21 @@ def _check_section_protection(
     return violations
 
 
+def _normalize_whitespace(text: str) -> str:
+    """Normalize whitespace for comparison (collapse multiple spaces/tabs to single space)."""
+    return " ".join(text.split())
+
+
 def _check_literal_protection(
     repo_root: Path,
     staged_files: list[str],
     global_literals: list[str],
     scoped_literals: dict[str, list[str]],
 ) -> list[Violation]:
-    """Check if protected strings were removed from files."""
+    """
+    Check if protected strings were removed from files.
+    Uses whitespace-normalized comparison to prevent trivial bypasses.
+    """
     violations = []
 
     # Check scoped literals first (more specific)
@@ -207,14 +279,17 @@ def _check_literal_protection(
         if new_content is None:
             continue
 
+        new_content_normalized = _normalize_whitespace(new_content)
+
         for literal in scoped_literals[file]:
-            if literal not in new_content:
+            literal_normalized = _normalize_whitespace(literal)
+            if literal_normalized not in new_content_normalized:
                 violations.append(
                     Violation(
                         type="protected_literal",
                         file=file,
                         literal=literal,
-                        reason=f"Required string '{literal}' removed from {file}",
+                        reason=f"Required string '{literal}' removed from {file} (whitespace-normalized)",
                     )
                 )
 
@@ -226,14 +301,21 @@ def _check_literal_protection(
         if old_content is None or new_content is None:
             continue
 
+        old_content_normalized = _normalize_whitespace(old_content)
+        new_content_normalized = _normalize_whitespace(new_content)
+
         for literal in global_literals:
-            if literal in old_content and literal not in new_content:
+            literal_normalized = _normalize_whitespace(literal)
+            if (
+                literal_normalized in old_content_normalized
+                and literal_normalized not in new_content_normalized
+            ):
                 violations.append(
                     Violation(
                         type="protected_literal",
                         file=file,
                         literal=literal,
-                        reason=f"Global protected string '{literal}' removed",
+                        reason=f"Global protected string '{literal}' removed (whitespace-normalized)",
                     )
                 )
 
