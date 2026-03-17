@@ -1,58 +1,56 @@
-# .docsync/links.toml
-# Code-to-documentation links for docsync itself
-#
-# Section-specific links enable precise staleness detection.
-# When cli.py changes, only README.md#Commands is marked stale.
+# docsync links - code-documentation relationships
 
-# === CLI and Commands ===
+# CLI module → CLI reference
 [[link]]
 code = "src/docsync/cli.py"
-docs = ["README.md#Commands", "README.md#Architecture"]
+docs = ["docs/cli/reference.md"]
 
-# === Core staleness detection ===
-[[link]]
-code = "src/docsync/staleness.py"
-docs = ["README.md#Section-Level Staleness Detection", "README.md#Architecture"]
-
-[[link]]
-code = "src/docsync/sections.py"
-docs = ["README.md#Section-Level Staleness Detection", "README.md#Architecture"]
-
-# === Link management ===
-[[link]]
-code = "src/docsync/toml_links.py"
-docs = ["README.md#Quick Start", "README.md#Architecture"]
-
-[[link]]
-code = "src/docsync/graph.py"
-docs = ["README.md#Architecture"]
-
-# === Import analysis ===
-[[link]]
-code = "src/docsync/imports.py"
-docs = ["README.md#Architecture"]
-
-# === Pre-commit hook ===
-[[link]]
-code = "src/docsync/hook.py"
-docs = ["README.md#Quick Start", "README.md#Architecture"]
-
-# === Configuration ===
+# Configuration → configuration docs
 [[link]]
 code = "src/docsync/config.py"
-docs = ["README.md#Configuration"]
+docs = ["docs/configuration.md"]
 
-# === Coverage reporting ===
+# Section parsing → staleness concept docs + architecture
 [[link]]
-code = "src/docsync/coverage.py"
-docs = ["README.md#Commands"]
+code = "src/docsync/sections.py"
+docs = ["docs/concepts/staleness.md#Section-Level Precision", "docs/architecture.md#Section Parsing"]
 
-# === Protection system ===
+# Staleness logic → staleness concept docs + architecture
+[[link]]
+code = "src/docsync/staleness.py"
+docs = ["docs/concepts/staleness.md", "docs/architecture.md#Staleness Detection"]
+
+# Graph construction → architecture
+[[link]]
+code = "src/docsync/graph.py"
+docs = ["docs/architecture.md#Graph Structure"]
+
+# TOML links → links concept docs + architecture
+[[link]]
+code = "src/docsync/toml_links.py"
+docs = ["docs/concepts/links.md", "docs/architecture.md"]
+
+# Imports → architecture
+[[link]]
+code = "src/docsync/imports.py"
+docs = ["docs/architecture.md#Import Graph"]
+
+# Hook → getting started
+[[link]]
+code = "src/docsync/hook.py"
+docs = ["docs/getting-started.md#Install the Pre-Commit Hook"]
+
+# Donttouch → donttouch concept docs + architecture
 [[link]]
 code = "src/docsync/donttouch.py"
-docs = ["README.md"]
+docs = ["docs/concepts/donttouch.md", "docs/architecture.md#Protected Content"]
 
-# === Caching ===
+# Coverage → CLI reference + architecture
+[[link]]
+code = "src/docsync/coverage.py"
+docs = ["docs/cli/reference.md#coverage", "docs/architecture.md#Coverage Calculation"]
+
+# Cache → architecture
 [[link]]
 code = "src/docsync/cache.py"
-docs = ["README.md#Caching"]
+docs = ["docs/architecture.md#Import Graph"]

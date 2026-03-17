@@ -1,0 +1,70 @@
+site_name: docsync
+site_description: Keep your code and documentation in sync
+site_url: https://nlebovits.github.io/docsync/
+repo_url: https://github.com/nlebovits/docsync
+repo_name: nlebovits/docsync
+
+theme:
+  name: material
+  logo: .github/branding/vector/default-monochrome-white.svg
+  favicon: .github/branding/profile.png
+  palette:
+    # Light mode
+    - scheme: default
+      primary: deep purple  # #7730E1 brand color
+      accent: lime          # #DBDF24 brand accent
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: lime
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            docstring_style: google
+            show_root_heading: true
+            show_signature_annotations: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Tutorial: tutorial.md
+  - Concepts:
+      - Links: concepts/links.md
+      - Staleness Detection: concepts/staleness.md
+      - Protected Content: concepts/donttouch.md
+  - CLI Reference: cli/reference.md
+  - Configuration: configuration.md
+  - Skills:
+      - Audit: skills/audit.md
+  - Architecture: architecture.md
+  - Contributing: contributing.md
