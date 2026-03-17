@@ -10,7 +10,7 @@ from docsync.config import load_config
 from docsync.donttouch import check_protections, load_donttouch
 from docsync.graph import build_docsync_graph, get_linked_docs
 from docsync.imports import build_import_graph
-from docsync.staleness import is_doc_stale
+from docsync.staleness import check_staleness_enriched, is_doc_stale
 from docsync.toml_links import (
     Link,
     LinkTarget,
@@ -476,6 +476,58 @@ def _count_all_stale_docs(repo_root: Path, config, graph: dict, import_graph: di
     return stale_count
 
 
+def _format_staleness_text(result, show_diff: bool = False, max_commits: int = 5) -> str:
+    """Format a StalenessResult for text output."""
+    lines = []
+
+    # Header
+    if result.section:
+        lines.append(f"  {result.doc_target}")
+    else:
+        lines.append(f"  {result.doc_target}")
+
+    lines.append(f"    Code: {result.code_file}")
+
+    # Dates
+    if result.last_code_change:
+        commit_info = f"({result.last_code_commit})" if result.last_code_commit else ""
+        lines.append(f"    Last code change: {result.last_code_change} {commit_info}")
+    if result.last_doc_update:
+        lines.append(f"    Last doc update: {result.last_doc_update}")
+
+    # Commits since
+    if result.commits_since:
+        lines.append("    Commits since doc updated:")
+        for commit in result.commits_since[:max_commits]:
+            lines.append(f"      {commit.sha} ({commit.date}) {commit.message}")
+        if len(result.commits_since) > max_commits:
+            lines.append(f"      ... and {len(result.commits_since) - max_commits} more")
+
+    # Symbol changes
+    if result.symbols_added or result.symbols_removed:
+        added = len(result.symbols_added)
+        removed = len(result.symbols_removed)
+        summary_parts = []
+        if added:
+            summary_parts.append(f"+{added} symbol{'s' if added != 1 else ''}")
+        if removed:
+            summary_parts.append(f"-{removed} symbol{'s' if removed != 1 else ''}")
+        lines.append(f"    Changed: {', '.join(summary_parts)}")
+        if result.symbols_added:
+            lines.append(f"      Added: {', '.join(result.symbols_added)}")
+        if result.symbols_removed:
+            lines.append(f"      Removed: {', '.join(result.symbols_removed)}")
+
+    # Diff
+    if show_diff and result.code_diff:
+        lines.append("    Diff:")
+        for diff_line in result.code_diff.split("\n")[:30]:
+            lines.append(f"      {diff_line}")
+
+    lines.append("")  # Blank line between items
+    return "\n".join(lines)
+
+
 def cmd_check(args: argparse.Namespace) -> int:
     """Check if docs linked to staged/specified files are stale (CI/pre-commit mode)."""
     repo_root = Path.cwd()
@@ -521,8 +573,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     if config.transitive_depth > 0:
         import_graph = build_import_graph(repo_root)
 
+    # Parse diff options
+    show_diff = getattr(args, "show_diff", False)
+    diff_lines = getattr(args, "diff_lines", 30)
+    if diff_lines != 30:  # Non-default value implies show_diff
+        show_diff = True
+
     # Check each file
-    stale_items = []
+    stale_results = []
     for file_path in files_to_check:
         doc_targets = get_linked_docs(file_path, graph, config)
 
@@ -534,22 +592,22 @@ def cmd_check(args: argparse.Namespace) -> int:
         if config.transitive_depth > 0 and file_path in import_graph:
             transitive_imports = list(import_graph[file_path])
 
-        # Check staleness for each doc target
+        # Check staleness for each doc target (enriched)
         for doc_target_str in doc_targets:
             target = LinkTarget.parse(doc_target_str)
-            is_stale, reason = is_doc_stale(repo_root, file_path, target, transitive_imports)
+            result = check_staleness_enriched(
+                repo_root,
+                file_path,
+                target,
+                transitive_imports,
+                include_diff=show_diff,
+                max_diff_lines=diff_lines,
+            )
 
-            if is_stale:
-                stale_items.append(
-                    {
-                        "code_file": file_path,
-                        "doc_target": doc_target_str,
-                        "reason": reason,
-                        "section": target.section,
-                    }
-                )
+            if result.is_stale:
+                stale_results.append(result)
 
-    if not stale_items:
+    if not stale_results:
         # Check passes - but hint if there are stale docs elsewhere
         if args.format != "json":
             total_stale = _count_all_stale_docs(repo_root, config, graph, import_graph)
@@ -567,16 +625,12 @@ def cmd_check(args: argparse.Namespace) -> int:
 
     # Report stale docs
     if args.format == "json":
-        print(json.dumps({"stale": stale_items}, indent=2))
+        stale_dicts = [r.to_dict(include_diff=show_diff) for r in stale_results]
+        print(json.dumps({"stale": stale_dicts}, indent=2))
     else:
-        print(f"❌ Found {len(stale_items)} stale documentation targets:\n")
-        for item in stale_items:
-            if item["section"]:
-                print(f"  {item['doc_target']} (section: {item['section']})")
-            else:
-                print(f"  {item['doc_target']}")
-            print(f"    Reason: {item['reason']}")
-            print(f"    Code: {item['code_file']}\n")
+        print(f"❌ Found {len(stale_results)} stale documentation targets:\n")
+        for result in stale_results:
+            print(_format_staleness_text(result, show_diff=show_diff))
 
     if config.mode == "block":
         return 1
@@ -598,8 +652,14 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
     if config.transitive_depth > 0:
         import_graph = build_import_graph(repo_root)
 
+    # Parse diff options
+    show_diff = getattr(args, "show_diff", False)
+    diff_lines = getattr(args, "diff_lines", 30)
+    if diff_lines != 30:  # Non-default value implies show_diff
+        show_diff = True
+
     # Check all code files in graph
-    stale_items = []
+    stale_results = []
     code_files = {k for k in graph if not any(k.endswith(ext) for ext in [".md", ".rst"])}
 
     for code_file in code_files:
@@ -611,36 +671,33 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
 
         for doc_target_str in doc_targets:
             target = LinkTarget.parse(doc_target_str)
-            is_stale, reason = is_doc_stale(repo_root, code_file, target, transitive_imports)
+            result = check_staleness_enriched(
+                repo_root,
+                code_file,
+                target,
+                transitive_imports,
+                include_diff=show_diff,
+                max_diff_lines=diff_lines,
+            )
 
-            if is_stale:
-                stale_items.append(
-                    {
-                        "code_file": code_file,
-                        "doc_target": doc_target_str,
-                        "reason": reason,
-                        "section": target.section,
-                    }
-                )
+            if result.is_stale:
+                stale_results.append(result)
 
     if args.format == "json":
-        print(json.dumps({"stale": stale_items}, indent=2))
+        stale_dicts = [r.to_dict(include_diff=show_diff) for r in stale_results]
+        print(json.dumps({"stale": stale_dicts}, indent=2))
     elif args.format == "paths":
         # Just print unique doc paths
-        doc_paths = {item["doc_target"].split("#")[0] for item in stale_items}
+        doc_paths = {r.doc_target.split("#")[0] for r in stale_results}
         for doc_path in sorted(doc_paths):
             print(doc_path)
     else:
-        if not stale_items:
+        if not stale_results:
             print("✓ No stale documentation")
         else:
-            print(f"Found {len(stale_items)} stale documentation targets:\n")
-            for item in stale_items:
-                print(f"  {item['doc_target']}")
-                if item["section"]:
-                    print(f"    Section: {item['section']}")
-                print(f"    Code: {item['code_file']}")
-                print(f"    Reason: {item['reason']}\n")
+            print(f"Found {len(stale_results)} stale documentation targets:\n")
+            for result in stale_results:
+                print(_format_staleness_text(result, show_diff=show_diff))
 
     return 0
 
@@ -982,6 +1039,15 @@ def main() -> int:
     check_parser.add_argument(
         "--format", choices=["text", "json"], default="text", help="Output format"
     )
+    check_parser.add_argument(
+        "--show-diff", action="store_true", help="Include git diff of changed code"
+    )
+    check_parser.add_argument(
+        "--diff-lines",
+        type=int,
+        default=30,
+        help="Max lines of diff to show (default: 30, implies --show-diff)",
+    )
 
     # list-stale
     stale_parser = subparsers.add_parser(
@@ -995,6 +1061,15 @@ def main() -> int:
     )
     stale_parser.add_argument(
         "--format", choices=["text", "paths", "json"], default="text", help="Output format"
+    )
+    stale_parser.add_argument(
+        "--show-diff", action="store_true", help="Include git diff of changed code"
+    )
+    stale_parser.add_argument(
+        "--diff-lines",
+        type=int,
+        default=30,
+        help="Max lines of diff to show (default: 30, implies --show-diff)",
     )
 
     # affected-docs

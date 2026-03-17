@@ -160,13 +160,15 @@ Documentation Coverage: 85.0%
 Check staged files for doc freshness (CI/pre-commit).
 
 ```bash
-docsync check [--staged-files FILES] [--format text|json]
+docsync check [--staged-files FILES] [--format text|json] [--show-diff] [--diff-lines N]
 ```
 
 **Options:**
 
 - `--staged-files` - Comma-separated list of files (overrides git staged)
 - `--format` - Output format (default: `text`)
+- `--show-diff` - Include git diff of changed code
+- `--diff-lines N` - Max lines of diff to show (default: 30, implies `--show-diff`)
 
 **Purpose:** Fast, focused check for pre-commit hooks and CI pipelines.
 
@@ -182,7 +184,14 @@ docsync: ❌ commit blocked
 Stale documentation detected:
   docs/api.md#Authentication
     Code: src/auth.py
-    Reason: Section unchanged since src/auth.py changed
+    Last code change: 2026-03-17 (abc1234)
+    Last doc update: 2026-03-10
+    Commits since doc updated:
+      abc1234 (2026-03-17) feat: add MFA support
+      def5678 (2026-03-15) fix: session timeout
+    Changed: +2 symbols, -1 symbol
+      Added: mfa_verify, mfa_setup
+      Removed: legacy_auth
 ```
 
 **Example (json):**
@@ -194,10 +203,32 @@ Stale documentation detected:
       "code_file": "src/auth.py",
       "doc_target": "docs/api.md#Authentication",
       "section": "Authentication",
-      "reason": "Section unchanged since src/auth.py changed"
+      "reason": "Section unchanged since src/auth.py changed",
+      "last_code_change": "2026-03-17",
+      "last_code_commit": "abc1234",
+      "last_doc_update": "2026-03-10",
+      "commits_since": [
+        {"sha": "abc1234", "date": "2026-03-17", "message": "feat: add MFA support"}
+      ],
+      "symbols_added": ["mfa_verify", "mfa_setup"],
+      "symbols_removed": ["legacy_auth"]
     }
   ]
 }
+```
+
+**With `--show-diff`:**
+
+```bash
+$ docsync check --show-diff
+
+  docs/api.md#Authentication
+    Code: src/auth.py
+    ...
+    Diff:
+      +def mfa_verify(user_id: str, code: str) -> bool:
+      +    """Verify MFA code."""
+      -def legacy_auth(username: str) -> bool:
 ```
 
 **Exit codes:**
@@ -214,15 +245,17 @@ Stale documentation detected:
 List ALL stale docs regardless of recent changes (audit).
 
 ```bash
-docsync list-stale [--format text|paths|json]
+docsync list-stale [--format text|paths|json] [--show-diff] [--diff-lines N]
 ```
 
 **Options:**
 
 - `--format` - Output format (default: `text`)
-  - `text` - Human-readable
+  - `text` - Human-readable with enriched details
   - `paths` - Just file paths (one per line)
-  - `json` - Machine-readable
+  - `json` - Machine-readable with full metadata
+- `--show-diff` - Include git diff of changed code
+- `--diff-lines N` - Max lines of diff to show (default: 30, implies `--show-diff`)
 
 **Purpose:** Comprehensive audit of documentation staleness.
 
@@ -233,15 +266,23 @@ docsync list-stale [--format text|paths|json]
 ```bash
 $ docsync list-stale
 
-Stale documentation:
+Found 2 stale documentation targets:
 
   docs/api.md#Authentication
     Code: src/auth.py
-    Reason: Section unchanged since src/auth.py changed
-  
+    Last code change: 2026-03-17 (abc1234)
+    Last doc update: 2026-03-10
+    Commits since doc updated:
+      abc1234 (2026-03-17) feat: add MFA support
+      def5678 (2026-03-15) fix: session timeout
+    Changed: +2 symbols, -1 symbol
+      Added: mfa_verify, mfa_setup
+      Removed: legacy_auth
+
   docs/models.md
     Code: src/models/user.py
-    Reason: File unchanged since src/models/user.py changed
+    Last code change: 2026-03-16 (ghi9012)
+    Last doc update: 2026-03-01
 ```
 
 **Example (paths):**
@@ -260,7 +301,15 @@ docs/models.md
       "code_file": "src/auth.py",
       "doc_target": "docs/api.md#Authentication",
       "section": "Authentication",
-      "reason": "Section unchanged since src/auth.py changed"
+      "reason": "Section unchanged since src/auth.py changed",
+      "last_code_change": "2026-03-17",
+      "last_code_commit": "abc1234",
+      "last_doc_update": "2026-03-10",
+      "commits_since": [
+        {"sha": "abc1234", "date": "2026-03-17", "message": "feat: add MFA support"}
+      ],
+      "symbols_added": ["mfa_verify", "mfa_setup"],
+      "symbols_removed": ["legacy_auth"]
     }
   ]
 }

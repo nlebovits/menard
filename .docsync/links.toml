@@ -20,6 +20,11 @@ docs = ["docs/configuration.md#Staleness Detection"]
 code = "src/docsync/staleness.py"
 docs = ["docs/configuration.md#Staleness Detection"]
 
+# Symbol extraction (AST) → staleness detection
+[[link]]
+code = "src/docsync/symbols.py"
+docs = ["docs/configuration.md#Staleness Detection"]
+
 # TOML links → configuration
 [[link]]
 code = "src/docsync/toml_links.py"
@@ -28,24 +33,14 @@ docs = ["docs/configuration.md#links.toml"]
 # Hook → getting started + index
 [[link]]
 code = "src/docsync/hook.py"
-docs = ["docs/getting-started.md", "docs/index.md#Track Doc Sync"]
+docs = ["docs/getting-started.md", "docs/index.md#1. Track Doc Sync"]
 
 # Donttouch → configuration + index
 [[link]]
 code = "src/docsync/donttouch.py"
-docs = ["docs/configuration.md#donttouch", "docs/index.md#Flag Protected Content Changes"]
+docs = ["docs/configuration.md#donttouch", "docs/index.md#2. Flag Protected Content Changes"]
 
 # Coverage → configuration
 [[link]]
 code = "src/docsync/coverage.py"
-docs = ["docs/configuration.md#Validation and Coverage"]
-
-# Bootstrap → configuration + getting started
-[[link]]
-code = "src/docsync/bootstrap.py"
-docs = ["docs/configuration.md#Bootstrap", "docs/getting-started.md#Step 6: Bootstrap Additional Links"]
-
-# Validation → configuration
-[[link]]
-code = "src/docsync/validation.py"
 docs = ["docs/configuration.md#Validation and Coverage"]
