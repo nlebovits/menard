@@ -2,4 +2,4 @@
 
 ## License
 
-MIT License
+Apache License
