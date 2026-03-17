@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from docsync.config import load_config
+from docsync.donttouch import check_protections, load_donttouch
 from docsync.graph import build_docsync_graph, get_linked_docs
 from docsync.imports import build_import_graph
 from docsync.staleness import is_doc_stale
@@ -29,17 +30,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
     Returns a HookResult with pass/fail and structured information about
     what's stale or missing.
     """
-    # Load config
-    config = load_config(repo_root)
-    if config is None:
-        return HookResult(
-            passed=True,
-            stale_docs=[],
-            missing_links=[],
-            message="docsync: not configured (skipping checks)",
-        )
-
-    # Get staged files
+    # Get staged files first (needed for both protection and staleness checks)
     if staged_files is None:
         staged_files = _get_staged_files(repo_root)
 
@@ -49,6 +40,58 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             stale_docs=[],
             missing_links=[],
             message="docsync: no staged files",
+        )
+
+    # Check 1: Protected content (fast fail)
+    protection_rules = load_donttouch(repo_root)
+    if protection_rules:
+        violations = check_protections(repo_root, staged_files, protection_rules)
+        if violations:
+            message_lines = ["⛔ Cannot commit: protected content modified\n"]
+
+            # Group violations by type for clearer output
+            file_violations = [v for v in violations if v.type == "protected_file"]
+            section_violations = [v for v in violations if v.type == "protected_section"]
+            literal_violations = [v for v in violations if v.type == "protected_literal"]
+
+            if file_violations:
+                message_lines.append("Protected files:")
+                for v in file_violations:
+                    message_lines.append(f"  • {v.file}")
+
+            if section_violations:
+                if file_violations:
+                    message_lines.append("")
+                message_lines.append("Protected sections:")
+                for v in section_violations:
+                    message_lines.append(f"  • {v.file}#{v.section}")
+
+            if literal_violations:
+                if file_violations or section_violations:
+                    message_lines.append("")
+                message_lines.append("Protected strings:")
+                for v in literal_violations:
+                    literal_preview = v.literal[:50] + "..." if len(v.literal) > 50 else v.literal
+                    message_lines.append(f'  • {v.file}: "{literal_preview}"')
+
+            message_lines.append("\nTo bypass: git commit --no-verify")
+            message_lines.append("To modify rules: edit .docsync/donttouch")
+
+            return HookResult(
+                passed=False,
+                stale_docs=[],
+                missing_links=[],
+                message="\n".join(message_lines),
+            )
+
+    # Load config
+    config = load_config(repo_root)
+    if config is None:
+        return HookResult(
+            passed=True,
+            stale_docs=[],
+            missing_links=[],
+            message="docsync: not configured (skipping checks)",
         )
 
     # Build graphs

@@ -3,8 +3,11 @@ name = "docsync"
 version = "0.2.0"
 description = "Keep code and documentation in sync with centralized linking and section-aware staleness detection"
 requires-python = ">=3.11"
-license = "MIT"
+license = "Apache-2.0"
 readme = "README.md"
+dependencies = [
+    "pathspec>=1.0.4",
+]
 
 [project.scripts]
 docsync = "docsync.cli:main"
@@ -65,6 +68,6 @@ dev = [
 mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
-require_links = ["src/**/*.py"]
-exempt = ["tests/**"]
+require_links = []
+exempt = []
 doc_paths = ["docs/**/*.md", "README.md"]

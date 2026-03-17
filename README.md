@@ -79,48 +79,7 @@ docsync bootstrap --apply
 docsync install-hook
 ```
 
-Or add to `.pre-commit-config.yaml`:
-
-```yaml
-- repo: local
-  hooks:
-    - id: docsync-check
-      name: docsync-check
-      description: Check for stale documentation when code changes
-      entry: docsync check
-      language: system
-      pass_filenames: false
-      files: ^src/.*\.py$  # Adjust pattern for your source directory
-```
-
-### 4. Add to CI (recommended)
-
-Add docsync checks to your CI pipeline for enforcement beyond local pre-commit:
-
-```yaml
-# .github/workflows/ci.yml
-- name: Check for stale documentation
-  run: pip install docsync && docsync check
-```
-
-**CI Behavior Options:**
-
-**Option 1: Fail CI (strict enforcement)**
-```yaml
-- name: Check for stale documentation
-  run: docsync check  # Exit code 1 if stale → CI fails
-```
-Use when: Documentation accuracy is critical (APIs, libraries, contracts)
-
-**Option 2: Warn only (soft reminder)**
-```yaml
-- name: Check for stale documentation
-  run: docsync check || echo "⚠️ Documentation may be stale - please review"
-  continue-on-error: true
-```
-Use when: Docs can lag slightly (internal tools, refactorings that don't affect APIs)
-
-**Why the difference?** Timestamp-based staleness can't distinguish between "docs actually need updating" vs "code changed internally but docs are still accurate." In CI, you might want warnings rather than hard failures to avoid blocking deploys when docs are actually fine.
+Now commits will be blocked if documentation is stale.
 
 ## How It Works: Deterministic Checks + Probabilistic Updates
 
@@ -408,9 +367,18 @@ The docsync graph is a bidirectional mapping:
 
 Section-specific targets (`docs/api.md#Authentication`) are **distinct nodes** from whole-file targets (`docs/api.md`).
 
+## Migration from v0.1.x (Inline Comments)
+
+If you used the old inline comment system (`# docsync: docs/api.md`), there is no automatic migration tool since the new architecture is fundamentally different. You have two options:
+
+1. **Start fresh**: Run `docsync bootstrap --apply` to auto-generate links
+2. **Manual migration**: Extract inline comments into `.docsync/links.toml` following the schema
+
+The new system is more powerful and agent-native, but requires adopting the centralized TOML approach.
+
 ## License
 
-Apache 2.0 - see [LICENSE](LICENSE) for details.
+Apache-2.0 - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 

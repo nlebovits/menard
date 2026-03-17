@@ -4,8 +4,13 @@ from docsync.hook import run_hook
 
 
 def test_hook_no_config(tmp_path):
-    """Test hook with no configuration."""
-    result = run_hook(tmp_path, staged_files=[])
+    """Test hook with no configuration and some staged files."""
+    # Create a dummy file to stage
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "test.py").write_text("pass")
+
+    result = run_hook(tmp_path, staged_files=["src/test.py"])
     assert result.passed
     assert "not configured" in result.message
 
