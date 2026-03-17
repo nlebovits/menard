@@ -13,6 +13,7 @@ docsync is a pre-commit hook and CLI tool that ensures documentation stays fresh
 - **Pre-commit enforcement**: Blocks commits when documentation is missing or outdated
 - **Agent-native UX**: JSON output, deterministic checks, and scoped update tasks for AI agents
 - **Auto-bootstrap**: Intelligently generates links from filename conventions and content analysis
+- **Doc audit skill**: Claude Code skill that analyzes docs for trackability, suggests `links.toml` entries, `donttouch` rules, and restructuring
 
 ## Installation
 
@@ -196,6 +197,47 @@ This is **accurate**: updating a different section doesn't clear staleness for A
 |---------|-------------|
 | `docsync clear-cache` | Clear import graph cache |
 
+## Doc Audit Skill (Claude Code)
+
+docsync includes a **Claude Code skill** that analyzes your documentation for trackability and suggests improvements. This bridges the gap between "messy existing docs" and "docs that docsync can actually enforce."
+
+### What the Audit Analyzes
+
+| Signal | Good | Bad |
+|--------|------|-----|
+| **Structure** | Tables, code blocks, clear headings | Long prose blocks, flat text |
+| **Scope** | Section maps to one code file | Section references 7+ files |
+| **Coverage** | File paths in `links.toml` | Implicit file references in prose |
+| **Protection** | License/version in `donttouch` | Critical content unprotected |
+
+### Usage
+
+In Claude Code, the audit skill is available as `/audit` or by asking Claude to audit your docs:
+
+```
+> Audit the documentation in this repo for docsync trackability
+```
+
+The skill will:
+1. **Score** each doc file and section (1-10)
+2. **Suggest** `links.toml` entries from file path mentions in prose
+3. **Suggest** `donttouch` rules for licenses, versions, critical sections
+4. **Suggest** restructuring (prose → tables, section splits)
+
+### Ideal Onboarding Flow
+
+```bash
+docsync init                    # Creates config, .docsync/ directory
+# Then in Claude Code:
+> Audit my docs and apply the suggestions
+docsync bootstrap               # Fill in convention-based links
+docsync install-hook            # Start enforcing
+```
+
+### Skill Location
+
+The audit skill lives at `.claude/skills/audit.md` and can be customized for your project's specific patterns.
+
 ## Configuration
 
 Edit `[tool.docsync]` in `pyproject.toml`:
@@ -345,13 +387,19 @@ pyproject.toml          # [tool.docsync] configuration
 
 ### Core Modules
 
-- `toml_links.py` - TOML link file parsing and graph construction
-- `sections.py` - Markdown section parsing and line range extraction
-- `staleness.py` - Git diff-based section staleness detection
-- `graph.py` - Bidirectional graph construction
-- `imports.py` - Python import graph via AST parsing
-- `hook.py` - Pre-commit hook entry point
-- `cli.py` - Command-line interface
+| Module | Purpose |
+|--------|---------|
+| `cli.py` | Command-line interface |
+| `config.py` | Configuration parsing from pyproject.toml |
+| `toml_links.py` | TOML link file parsing and graph construction |
+| `sections.py` | Markdown section parsing and line range extraction |
+| `staleness.py` | Git diff-based section staleness detection |
+| `graph.py` | Bidirectional graph construction |
+| `imports.py` | Python import graph via AST parsing |
+| `hook.py` | Pre-commit hook entry point |
+| `donttouch.py` | Protected content guard |
+| `coverage.py` | Documentation coverage reporting |
+| `cache.py` | Import graph caching |
 
 ### Graph Structure
 
