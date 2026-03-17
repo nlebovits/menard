@@ -1,0 +1,17 @@
+# Protected content guard configuration
+# Lines starting with # are comments
+
+# Protect entire files or directories (gitignore-style patterns)
+LICENSE
+*.lock
+.github/workflows/
+
+# Protect specific markdown sections (file#section)
+README.md#License
+README.md#Contributing
+
+# Protect strings within specific files (file: "string")
+pyproject.toml: "Apache-2.0"
+
+# Protect strings globally (must exist somewhere, can't be removed)
+"Apache 2.0 - see LICENSE for details"
