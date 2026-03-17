@@ -23,6 +23,8 @@ docsync validate-links
 docsync coverage
 ```
 
+## Pre-Commit Setup
+
 Add to `.pre-commit-config.yaml`:
 
 ```yaml
@@ -37,12 +39,15 @@ repos:
         always_run: true
 ```
 
-Then install and use:
+Then install:
 
 ```bash
 pre-commit install
+```
 
-# Now commits block if docs are stale
+Now commits will block if docs are stale:
+
+```bash
 git commit -m "refactor auth"
 # ❌ Blocked: docs/api.md#Authentication unchanged since src/auth.py changed
 ```
