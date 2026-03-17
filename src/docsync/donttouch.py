@@ -319,8 +319,7 @@ def _check_literal_protection(
                         file=file,
                         literal=literal,
                         reason=(
-                            f"Global protected string '{literal}' removed "
-                            "(whitespace-normalized)"
+                            f"Global protected string '{literal}' removed (whitespace-normalized)"
                         ),
                     )
                 )
