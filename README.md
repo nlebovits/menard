@@ -408,18 +408,9 @@ The docsync graph is a bidirectional mapping:
 
 Section-specific targets (`docs/api.md#Authentication`) are **distinct nodes** from whole-file targets (`docs/api.md`).
 
-## Migration from v0.1.x (Inline Comments)
-
-If you used the old inline comment system (`# docsync: docs/api.md`), there is no automatic migration tool since the new architecture is fundamentally different. You have two options:
-
-1. **Start fresh**: Run `docsync bootstrap --apply` to auto-generate links
-2. **Manual migration**: Extract inline comments into `.docsync/links.toml` following the schema
-
-The new system is more powerful and agent-native, but requires adopting the centralized TOML approach.
-
 ## License
 
-MIT - see [LICENSE](LICENSE) for details.
+Apache 2.0 - see [LICENSE](LICENSE) for details.
 
 ## Contributing
 
