@@ -62,6 +62,8 @@ When you stage both code and docs together, docsync detects the staged changes a
 
 This works transitively too. If `src/auth.py` imports `src/crypto.py`, and crypto changes, auth docs can be marked stale (controlled by `transitive_depth`).
 
+**Section parsing:** When parsing markdown sections, docsync correctly handles code blocks. Lines starting with `#` inside code fences (` ``` `) are not treated as headings. This ensures sections containing bash scripts or other code with comment syntax are parsed with correct boundaries.
+
 ## donttouch
 
 Protect critical content from staleness checks in `.docsync/donttouch`:

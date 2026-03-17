@@ -14,6 +14,8 @@ def parse_markdown_section(file_path: Path, heading: str) -> tuple[int, int] | N
     - End of file if no such heading exists
 
     Heading matching is case-insensitive.
+
+    Note: Lines starting with # inside code fences (```) are NOT treated as headings.
     """
     try:
         with open(file_path, encoding="utf-8") as f:
@@ -23,11 +25,23 @@ def parse_markdown_section(file_path: Path, heading: str) -> tuple[int, int] | N
 
     heading_level = None
     start_line = None
+    in_code_fence = False
 
     for i, line in enumerate(lines, start=1):
+        stripped = line.strip()
+
+        # Track code fence state
+        if stripped.startswith("```"):
+            in_code_fence = not in_code_fence
+            continue
+
+        # Skip heading detection inside code fences (issue #25)
+        if in_code_fence:
+            continue
+
         # Check if this is a heading
-        if line.strip().startswith("#"):
-            match = re.match(r"^(#+)\s+(.+)$", line.strip())
+        if stripped.startswith("#"):
+            match = re.match(r"^(#+)\s+(.+)$", stripped)
             if match:
                 level = len(match.group(1))
                 text = match.group(2).strip()

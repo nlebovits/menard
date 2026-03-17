@@ -208,3 +208,41 @@ Text.
         sections = list_sections(doc_file)
         assert "Authentication" in sections
         assert "Authentication {#auth-section}" not in sections
+
+
+def test_parse_markdown_section_with_code_fences():
+    """Test that # inside code blocks are not treated as headings (issue #25)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        doc_file = Path(tmpdir) / "test.md"
+        doc_file.write_text(
+            """# Documentation
+
+## Quick Start
+
+```bash
+# Install the package
+pip install mypackage
+
+# Run the tool
+mypackage --help
+```
+
+That's how you install it.
+
+## Configuration
+
+Config goes here.
+"""
+        )
+
+        # The Quick Start section should include the entire code block
+        # and not end prematurely at "# Install the package"
+        result = parse_markdown_section(doc_file, "Quick Start")
+        assert result == (3, 14)  # Ends at line before "## Configuration"
+
+        # Verify the section includes the code block content
+        content = get_section_content(doc_file, "Quick Start")
+        assert content is not None
+        assert "# Install the package" in content
+        assert "# Run the tool" in content
+        assert "## Configuration" not in content
