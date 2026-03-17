@@ -13,6 +13,7 @@ from docsync.cli import (
     cmd_init,
     cmd_install_hook,
     cmd_list_stale,
+    cmd_skills,
     cmd_validate_links,
 )
 
@@ -183,3 +184,89 @@ def test_cmd_bootstrap_basic(tmp_path, monkeypatch):
     result = cmd_bootstrap(Namespace(apply=False))
     # Should work even without docs
     assert result in (0, 1)
+
+
+def test_cmd_skills_no_directory(tmp_path, monkeypatch, capsys):
+    """Test skills command when .claude/skills doesn't exist."""
+    monkeypatch.chdir(tmp_path)
+
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert "No skills directory found" in captured.out
+
+
+def test_cmd_skills_empty_directory(tmp_path, monkeypatch, capsys):
+    """Test skills command with empty skills directory."""
+    monkeypatch.chdir(tmp_path)
+
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert "No skills found" in captured.out
+
+
+def test_cmd_skills_lists_skills(tmp_path, monkeypatch, capsys):
+    """Test skills command lists available skills."""
+    monkeypatch.chdir(tmp_path)
+
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+
+    # Create a sample skill
+    skill_content = """# docsync audit
+
+Analyze documentation for docsync trackability and suggest improvements.
+
+## When to Use
+
+Use this skill when:
+- Onboarding a new repo to docsync
+- Periodic health checks on documentation coverage
+- After adding new docs that need links.toml entries
+"""
+    (skills_dir / "audit.md").write_text(skill_content)
+
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+    captured = capsys.readouterr()
+    assert "docsync audit" in captured.out
+    assert "Analyze documentation" in captured.out
+    assert "When to use:" in captured.out
+    assert "Onboarding a new repo" in captured.out
+
+
+def test_cmd_skills_json_format(tmp_path, monkeypatch, capsys):
+    """Test skills command with JSON output format."""
+    monkeypatch.chdir(tmp_path)
+
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+
+    skill_content = """# test skill
+
+A test skill for testing.
+
+## When to Use
+
+- Testing purposes
+"""
+    (skills_dir / "test.md").write_text(skill_content)
+
+    result = cmd_skills(Namespace(format="json"))
+    assert result == 0
+
+    import json
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+    assert "skills" in data
+    assert len(data["skills"]) == 1
+    assert data["skills"][0]["name"] == "test"
+    assert data["skills"][0]["title"] == "test skill"

@@ -712,9 +712,103 @@ def cmd_list_protected(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_skills(args: argparse.Namespace) -> int:
+    """List available Claude Code skills."""
+    repo_root = Path.cwd()
+    skills_dir = repo_root / ".claude" / "skills"
+
+    if not skills_dir.exists():
+        print("No skills directory found at .claude/skills/")
+        print("\nSkills are Claude Code extensions that provide specialized workflows.")
+        print("To add skills, create .claude/skills/<name>.md files.")
+        return 0
+
+    # Find all skill files
+    skill_files = sorted(skills_dir.glob("*.md"))
+
+    if not skill_files:
+        print("No skills found in .claude/skills/")
+        print("\nTo add skills, create .claude/skills/<name>.md files.")
+        return 0
+
+    skills = []
+    for skill_path in skill_files:
+        skill_name = skill_path.stem
+        content = skill_path.read_text()
+        lines = content.strip().split("\n")
+
+        # Extract title (first # heading) and description (first non-empty paragraph)
+        title = skill_name
+        description = ""
+        when_to_use = []
+
+        in_when_to_use = False
+        found_description = False
+
+        for line in lines:
+            stripped = line.strip()
+
+            # Title from first heading
+            if stripped.startswith("# ") and title == skill_name:
+                title = stripped[2:].strip()
+                continue
+
+            # Description is first non-empty line after title
+            if not found_description and stripped and not stripped.startswith("#"):
+                description = stripped
+                found_description = True
+                continue
+
+            # When to Use section
+            if stripped.lower().startswith("## when to use"):
+                in_when_to_use = True
+                continue
+
+            if in_when_to_use:
+                if stripped.startswith("## "):
+                    in_when_to_use = False
+                elif stripped.startswith("- "):
+                    when_to_use.append(stripped[2:])
+
+        skills.append(
+            {
+                "name": skill_name,
+                "title": title,
+                "description": description,
+                "when_to_use": when_to_use,
+                "path": str(skill_path.relative_to(repo_root)),
+            }
+        )
+
+    if args.format == "json":
+        print(json.dumps({"skills": skills}, indent=2))
+    else:
+        print(f"Available Claude Code skills ({len(skills)}):\n")
+        for skill in skills:
+            print(f"  {skill['title']}")
+            if skill["description"]:
+                print(f"    {skill['description']}")
+            if skill["when_to_use"]:
+                print("    When to use:")
+                for use_case in skill["when_to_use"][:3]:  # Show first 3
+                    print(f"      - {use_case}")
+            print(f"    File: {skill['path']}")
+            print()
+
+        print("Usage:")
+        print("  Skills are automatically available to Claude Code agents.")
+        print("  Invoke with: /docsync <skill-name>")
+        print("  Example: /docsync audit")
+
+    return 0
+
+
 def main() -> int:
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(description="docsync: Keep code and documentation in sync")
+    parser = argparse.ArgumentParser(
+        description="docsync: Keep code and documentation in sync",
+        epilog="Claude Code skills: Run 'docsync skills' to list available AI-assisted workflows.",
+    )
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # init
@@ -775,6 +869,14 @@ def main() -> int:
     # list-protected
     subparsers.add_parser("list-protected", help="List all protection rules")
 
+    # skills
+    skills_parser = subparsers.add_parser(
+        "skills", help="List available Claude Code skills"
+    )
+    skills_parser.add_argument(
+        "--format", choices=["text", "json"], default="text", help="Output format"
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -795,6 +897,7 @@ def main() -> int:
         "install-hook": cmd_install_hook,
         "check-protected": cmd_check_protected,
         "list-protected": cmd_list_protected,
+        "skills": cmd_skills,
     }
 
     return commands[args.command](args)
