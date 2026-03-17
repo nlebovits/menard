@@ -1,5 +1,1 @@
-# Project
-
-## License
-
-Apache License
+Apache 2.0 - see LICENSE for details
