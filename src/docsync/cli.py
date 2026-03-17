@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 from docsync.config import load_config
@@ -18,16 +19,132 @@ from docsync.toml_links import (
     validate_links,
 )
 
+# Directories to exclude from source detection
+EXCLUDED_DIRS = frozenset(
+    {
+        "tests",
+        "test",
+        "docs",
+        "doc",
+        "examples",
+        "example",
+        "scripts",
+        "bin",
+        "build",
+        "dist",
+        ".venv",
+        "venv",
+        ".tox",
+        ".nox",
+        ".eggs",
+        "__pycache__",
+        ".git",
+        ".hg",
+        ".svn",
+        "node_modules",
+        "vendor",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+    }
+)
+
+
+def detect_source_directories(repo_root: Path) -> list[str]:
+    """Detect Python source directories in a project.
+
+    Detection strategy:
+    1. Check pyproject.toml for explicit package configuration
+    2. Look for directories containing __init__.py (Python packages)
+    3. Fall back to src/ if nothing found
+
+    Returns a list of glob patterns like ["src/**/*.py", "mypackage/**/*.py"]
+    """
+    patterns: list[str] = []
+
+    # Strategy 1: Check pyproject.toml for package configuration
+    pyproject_path = repo_root / "pyproject.toml"
+    if pyproject_path.exists():
+        try:
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+
+            # Check [tool.hatch.build.targets.wheel] packages
+            hatch_packages = (
+                data.get("tool", {})
+                .get("hatch", {})
+                .get("build", {})
+                .get("targets", {})
+                .get("wheel", {})
+                .get("packages", [])
+            )
+            for pkg in hatch_packages:
+                # pkg is like "src/docsync" -> "src/docsync/**/*.py"
+                patterns.append(f"{pkg}/**/*.py")
+
+            # Check [tool.setuptools.packages] or [tool.setuptools.package-dir]
+            setuptools = data.get("tool", {}).get("setuptools", {})
+            if "packages" in setuptools:
+                for pkg in setuptools["packages"]:
+                    patterns.append(f"{pkg}/**/*.py")
+            if "package-dir" in setuptools:
+                for _name, path in setuptools["package-dir"].items():
+                    if path:  # Could be "" for root
+                        patterns.append(f"{path}/**/*.py")
+
+            if patterns:
+                return patterns
+        except Exception:
+            pass  # Fall through to directory scanning
+
+    # Strategy 2: Look for directories with __init__.py
+    package_dirs: set[str] = set()
+
+    for init_file in repo_root.rglob("__init__.py"):
+        # Get the package directory (parent of __init__.py)
+        pkg_dir = init_file.parent
+        rel_path = pkg_dir.relative_to(repo_root)
+
+        # Skip excluded directories
+        parts = rel_path.parts
+        if any(part.lower() in EXCLUDED_DIRS for part in parts):
+            continue
+
+        # Skip hidden directories
+        if any(part.startswith(".") for part in parts):
+            continue
+
+        # Find the top-level package directory
+        # e.g., if we find src/mypackage/subpkg/__init__.py,
+        # we want src/mypackage, not src/mypackage/subpkg
+        top_level = parts[0] if parts else ""
+        if top_level and top_level.lower() not in EXCLUDED_DIRS:
+            package_dirs.add(top_level)
+
+    # Convert to glob patterns
+    for pkg_dir in sorted(package_dirs):
+        patterns.append(f"{pkg_dir}/**/*.py")
+
+    # Strategy 3: Fall back to src/ if nothing found
+    if not patterns:
+        patterns.append("src/**/*.py")
+
+    return patterns
+
 
 def cmd_init(args: argparse.Namespace) -> int:
     """Initialize docsync configuration."""
     repo_root = Path.cwd()
     pyproject_path = repo_root / "pyproject.toml"
 
+    # Auto-detect source directories
+    detected_patterns = detect_source_directories(repo_root)
+    require_links_toml = ", ".join(f'"{p}"' for p in detected_patterns)
+
     if not pyproject_path.exists():
         print("⚠️  No pyproject.toml found. Creating minimal configuration...")
         pyproject_path.write_text(
-            """[project]
+            f"""[project]
 name = "project"
 version = "0.1.0"
 
@@ -35,7 +152,7 @@ version = "0.1.0"
 mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
-require_links = ["src/**/*.py"]
+require_links = [{require_links_toml}]
 exempt = ["tests/**"]
 doc_paths = ["docs/**/*.md", "README.md"]
 """
@@ -51,17 +168,21 @@ doc_paths = ["docs/**/*.md", "README.md"]
         # Append configuration
         with open(pyproject_path, "a") as f:
             f.write(
-                """
+                f"""
 [tool.docsync]
 mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
-require_links = ["src/**/*.py"]
+require_links = [{require_links_toml}]
 exempt = ["tests/**"]
 doc_paths = ["docs/**/*.md", "README.md"]
 """
             )
         print(f"✓ Added [tool.docsync] to {pyproject_path}")
+
+    # Report detected source directories
+    if detected_patterns != ["src/**/*.py"]:
+        print(f"✓ Detected source directories: {detected_patterns}")
 
     # Create .docsync directory
     docsync_dir = repo_root / ".docsync"
