@@ -47,7 +47,7 @@ docsync parses doc files to find section headings, extracts line ranges, then us
 
 ## Staleness Detection
 
-docsync uses git diff analysis to detect stale docs. It checks in two places:
+docsync uses git diff analysis to detect stale docs, combined with AST parsing to identify specific symbol changes (functions, classes added/removed). It checks in two places:
 
 ```bash
 # 1. Check staged content first (same commit workflow)
@@ -61,6 +61,33 @@ git diff <commit> HEAD -- docs/api.md
 When you stage both code and docs together, docsync detects the staged changes and passes. If docs aren't staged, it compares git history: if the diff shows changes overlapping with the section's line range, the doc was updated. If no overlap, it's stale.
 
 This works transitively too. If `src/auth.py` imports `src/crypto.py`, and crypto changes, auth docs can be marked stale (controlled by `transitive_depth`).
+
+### Enriched Output
+
+When docs are stale, docsync shows detailed information to help you understand what changed:
+
+- **Dates**: When code and docs were last updated
+- **Commits**: Recent commits that modified the code since docs were updated
+- **Symbol changes**: Functions and classes added or removed (via AST analysis)
+- **Code diff**: The actual git diff (with `--show-diff` flag)
+
+```bash
+$ docsync list-stale
+
+  docs/api.md#Authentication
+    Code: src/auth.py
+    Last code change: 2026-03-17 (abc1234)
+    Last doc update: 2026-03-10
+    Commits since doc updated:
+      abc1234 (2026-03-17) feat: add MFA support
+    Changed: +2 symbols, -1 symbol
+      Added: mfa_verify, mfa_setup
+      Removed: legacy_auth
+```
+
+The JSON output includes all this metadata for machine consumption—perfect for AI agents making targeted doc updates.
+
+Symbol extraction results are cached in `.docsync/symbols_cache.json` for performance. The cache uses content-based hashing, so identical file contents always return cached results. Old entries are automatically evicted to keep the cache under 500 entries.
 
 ## donttouch
 
