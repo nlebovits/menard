@@ -1,3 +1,7 @@
+<p align="center">
+  <img src=".github/branding/profile.png" alt="docsync logo" width="200">
+</p>
+
 # docsync
 
 **Keep your code and documentation in sync with centralized linking and section-aware staleness detection.**
