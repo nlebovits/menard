@@ -1,0 +1,12 @@
+# Protected content guard configuration
+# Lines starting with # are comments
+
+# Protect entire files or directories (gitignore-style patterns)
+LICENSE
+*.lock
+
+# Protect specific markdown sections (file#section)
+README.md#License
+
+# Protect the exact Apache 2.0 line in README
+README.md: "Apache 2.0 - see [LICENSE](LICENSE) for details."

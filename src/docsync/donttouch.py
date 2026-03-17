@@ -13,6 +13,7 @@ class ProtectionRules:
     """Parsed protection rules from .docsync/donttouch file."""
 
     file_patterns: pathspec.PathSpec  # Files/directories protected (gitignore-style)
+    file_pattern_strings: list[str]  # Original pattern strings for display
     section_protections: dict[str, list[str]]  # {"README.md": ["License", "Contributing"]}
     global_literals: list[str]  # Strings that must exist somewhere
     scoped_literals: dict[str, list[str]]  # {"pyproject.toml": ["Apache-2.0"]}
@@ -103,6 +104,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
 
     return ProtectionRules(
         file_patterns=spec,
+        file_pattern_strings=file_patterns,
         section_protections=section_protections,
         global_literals=global_literals,
         scoped_literals=scoped_literals,

@@ -684,9 +684,9 @@ def cmd_list_protected(args: argparse.Namespace) -> int:
         return 0
 
     # File patterns
-    if rules.file_patterns.patterns:
+    if rules.file_pattern_strings:
         print("Protected files:")
-        for pattern in rules.file_patterns.patterns:
+        for pattern in rules.file_pattern_strings:
             print(f"  {pattern}")
 
     # Section protections
