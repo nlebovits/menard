@@ -5,7 +5,8 @@
 ```bash
 git clone https://github.com/nlebovits/docsync.git
 cd docsync
-uv sync                    # Install dependencies
+uv sync --all-extras       # Install dependencies + dev extras
+uv run pre-commit install  # Install pre-commit hooks
 uv run pytest              # Run tests
 uv run ruff check .        # Lint
 uv run ruff format .       # Format
