@@ -1,15 +1,21 @@
 # License sections must not change without explicit decision
 README.md#License
 docs/contributing.md#License
+docs/index.md#License
 
 # Code of Conduct is policy
 docs/contributing.md#Code of Conduct
 
 # Brand colors must be consistent
 mkdocs.yml#palette
+docs/stylesheets/extra.css
 
 # Version requirement
 "Python 3.11+"
 
 # Apache license identifier
 "Apache-2.0"
+
+# Brand color values (exact hex codes)
+"#7730E1"
+"#DBDF24"

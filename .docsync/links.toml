@@ -1,56 +1,51 @@
 # docsync links - code-documentation relationships
 
-# CLI module → CLI reference
+# CLI module → CLI reference + index quick start
 [[link]]
 code = "src/docsync/cli.py"
-docs = ["docs/cli/reference.md"]
+docs = ["docs/cli/reference.md", "docs/index.md#Quick Start"]
 
 # Configuration → configuration docs
 [[link]]
 code = "src/docsync/config.py"
-docs = ["docs/configuration.md"]
+docs = ["docs/configuration.md#pyproject.toml"]
 
-# Section parsing → staleness concept docs + architecture
+# Section parsing → configuration (staleness detection section)
 [[link]]
 code = "src/docsync/sections.py"
-docs = ["docs/concepts/staleness.md#Section-Level Precision", "docs/architecture.md#Section Parsing"]
+docs = ["docs/configuration.md#Staleness Detection"]
 
-# Staleness logic → staleness concept docs + architecture
+# Staleness logic → configuration
 [[link]]
 code = "src/docsync/staleness.py"
-docs = ["docs/concepts/staleness.md", "docs/architecture.md#Staleness Detection"]
+docs = ["docs/configuration.md#Staleness Detection"]
 
-# Graph construction → architecture
-[[link]]
-code = "src/docsync/graph.py"
-docs = ["docs/architecture.md#Graph Structure"]
-
-# TOML links → links concept docs + architecture
+# TOML links → configuration
 [[link]]
 code = "src/docsync/toml_links.py"
-docs = ["docs/concepts/links.md", "docs/architecture.md"]
+docs = ["docs/configuration.md#links.toml"]
 
-# Imports → architecture
-[[link]]
-code = "src/docsync/imports.py"
-docs = ["docs/architecture.md#Import Graph"]
-
-# Hook → getting started
+# Hook → getting started + index
 [[link]]
 code = "src/docsync/hook.py"
-docs = ["docs/getting-started.md#Install the Pre-Commit Hook"]
+docs = ["docs/getting-started.md", "docs/index.md#Track Doc Sync"]
 
-# Donttouch → donttouch concept docs + architecture
+# Donttouch → configuration + index
 [[link]]
 code = "src/docsync/donttouch.py"
-docs = ["docs/concepts/donttouch.md", "docs/architecture.md#Protected Content"]
+docs = ["docs/configuration.md#donttouch", "docs/index.md#Flag Protected Content Changes"]
 
-# Coverage → CLI reference + architecture
+# Coverage → configuration
 [[link]]
 code = "src/docsync/coverage.py"
-docs = ["docs/cli/reference.md#coverage", "docs/architecture.md#Coverage Calculation"]
+docs = ["docs/configuration.md#Validation and Coverage"]
 
-# Cache → architecture
+# Bootstrap → configuration + getting started
 [[link]]
-code = "src/docsync/cache.py"
-docs = ["docs/architecture.md#Import Graph"]
+code = "src/docsync/bootstrap.py"
+docs = ["docs/configuration.md#Bootstrap", "docs/getting-started.md#Step 6: Bootstrap Additional Links"]
+
+# Validation → configuration
+[[link]]
+code = "src/docsync/validation.py"
+docs = ["docs/configuration.md#Validation and Coverage"]
