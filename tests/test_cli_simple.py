@@ -13,6 +13,7 @@ from docsync.cli import (
     cmd_init,
     cmd_install_hook,
     cmd_list_stale,
+    cmd_skills,
     cmd_validate_links,
 )
 
@@ -183,3 +184,45 @@ def test_cmd_bootstrap_basic(tmp_path, monkeypatch):
     result = cmd_bootstrap(Namespace(apply=False))
     # Should work even without docs
     assert result in (0, 1)
+
+
+def test_cmd_skills_no_dir(tmp_path, monkeypatch):
+    """Test skills command when no .claude/skills directory exists."""
+    monkeypatch.chdir(tmp_path)
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+
+def test_cmd_skills_empty_dir(tmp_path, monkeypatch):
+    """Test skills command when skills directory is empty."""
+    monkeypatch.chdir(tmp_path)
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+
+def test_cmd_skills_lists_skills(tmp_path, monkeypatch):
+    """Test skills command lists available skills."""
+    monkeypatch.chdir(tmp_path)
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+
+    skill_file = skills_dir / "audit.md"
+    skill_file.write_text("# Audit Skill\n\nAnalyze documentation for docsync.\n")
+
+    result = cmd_skills(Namespace(format="text"))
+    assert result == 0
+
+
+def test_cmd_skills_json_format(tmp_path, monkeypatch):
+    """Test skills command JSON output."""
+    monkeypatch.chdir(tmp_path)
+    skills_dir = tmp_path / ".claude" / "skills"
+    skills_dir.mkdir(parents=True)
+
+    skill_file = skills_dir / "audit.md"
+    skill_file.write_text("# Audit Skill\n\nAnalyze docs.\n")
+
+    result = cmd_skills(Namespace(format="json"))
+    assert result == 0

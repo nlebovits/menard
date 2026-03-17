@@ -204,6 +204,7 @@ This is **accurate**: updating a different section doesn't clear staleness for A
 | Command | Description |
 |---------|-------------|
 | `docsync clear-cache` | Clear import graph cache |
+| `docsync skills` | List available Claude Code skills |
 
 ## Doc Audit Skill (Claude Code)
 
@@ -397,7 +398,7 @@ pyproject.toml          # [tool.docsync] configuration
 
 | Module | Purpose |
 |--------|---------|
-| `cli.py` | Command-line interface |
+| `cli.py` | Command-line interface and skill discovery |
 | `config.py` | Configuration parsing from pyproject.toml |
 | `toml_links.py` | TOML link file parsing and graph construction |
 | `sections.py` | Markdown section parsing and line range extraction |

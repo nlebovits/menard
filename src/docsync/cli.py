@@ -745,9 +745,80 @@ def cmd_list_protected(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_skills(args: argparse.Namespace) -> int:
+    """List available Claude Code skills."""
+    repo_root = Path.cwd()
+    skills_dir = repo_root / ".claude" / "skills"
+
+    if not skills_dir.exists():
+        if args.format == "json":
+            print(json.dumps({"skills": [], "error": "No skills directory found"}))
+        else:
+            print("No skills directory found at .claude/skills/")
+            print("\nSkills are Claude Code extensions that provide specialized workflows.")
+            print("To add skills, create .claude/skills/<name>.md files.")
+        return 0
+
+    skill_files = sorted(skills_dir.glob("*.md"))
+
+    if not skill_files:
+        if args.format == "json":
+            print(json.dumps({"skills": []}))
+        else:
+            print("No skills found in .claude/skills/")
+            print("\nTo add skills, create .claude/skills/<name>.md files.")
+        return 0
+
+    skills = []
+    for skill_path in skill_files:
+        skill_name = skill_path.stem
+        content = skill_path.read_text()
+        lines = content.strip().split("\n")
+
+        # Extract title and description from skill file
+        title = skill_name
+        description = ""
+
+        for line in lines:
+            if line.startswith("# "):
+                title = line[2:].strip()
+            elif line.startswith("description:"):
+                description = line.split(":", 1)[1].strip()
+                break
+            elif not description and line.strip() and not line.startswith("#"):
+                description = line.strip()
+                break
+
+        skills.append(
+            {
+                "name": skill_name,
+                "title": title,
+                "description": description[:100] + "..." if len(description) > 100 else description,
+                "path": str(skill_path.relative_to(repo_root)),
+            }
+        )
+
+    if args.format == "json":
+        print(json.dumps({"skills": skills}, indent=2))
+    else:
+        print("Available Claude Code skills:\n")
+        for skill in skills:
+            print(f"  {skill['name']}")
+            if skill["description"]:
+                print(f"    {skill['description']}")
+            print()
+        print("To use in Claude Code:")
+        print("  Invoke via /skill-name or ask Claude to use the skill")
+
+    return 0
+
+
 def main() -> int:
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(description="docsync: Keep code and documentation in sync")
+    parser = argparse.ArgumentParser(
+        description="docsync: Keep code and documentation in sync",
+        epilog="Tip: Run 'docsync skills' to see available Claude Code skills.",
+    )
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # init
@@ -824,6 +895,16 @@ def main() -> int:
     # list-protected
     subparsers.add_parser("list-protected", help="List all protection rules")
 
+    # skills
+    skills_parser = subparsers.add_parser(
+        "skills",
+        help="List available Claude Code skills",
+        description="Show Claude Code skills bundled with this project.",
+    )
+    skills_parser.add_argument(
+        "--format", choices=["text", "json"], default="text", help="Output format"
+    )
+
     args = parser.parse_args()
 
     if not args.command:
@@ -844,6 +925,7 @@ def main() -> int:
         "install-hook": cmd_install_hook,
         "check-protected": cmd_check_protected,
         "list-protected": cmd_list_protected,
+        "skills": cmd_skills,
     }
 
     return commands[args.command](args)
