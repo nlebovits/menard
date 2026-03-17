@@ -47,17 +47,18 @@ docsync parses doc files to find section headings, extracts line ranges, then us
 
 ## Staleness Detection
 
-docsync uses git diff analysis to detect stale docs:
+docsync uses git diff analysis to detect stale docs. It checks in two places:
 
 ```bash
-# Get last commit that changed the code file
-git log -1 --format=%H -- src/auth.py
+# 1. Check staged content first (same commit workflow)
+git diff --cached -- docs/api.md
 
-# Check if the linked doc section changed since that commit
+# 2. Fall back to git history
+git log -1 --format=%H -- src/auth.py
 git diff <commit> HEAD -- docs/api.md
 ```
 
-If the diff shows changes overlapping with the section's line range, the doc was updated. If no overlap, it's stale.
+When you stage both code and docs together, docsync detects the staged changes and passes. If docs aren't staged, it compares git history: if the diff shows changes overlapping with the section's line range, the doc was updated. If no overlap, it's stale.
 
 This works transitively too. If `src/auth.py` imports `src/crypto.py`, and crypto changes, auth docs can be marked stale (controlled by `transitive_depth`).
 
@@ -107,9 +108,13 @@ Validation catches typos and missing sections. Coverage shows what percentage of
 ## Commands
 
 ```bash
-docsync check           # Pre-commit: check staged files for stale docs
+docsync check           # Pre-commit: validate links + check staged files for stale docs
 docsync list-stale      # Audit: list ALL stale docs across entire repo
 docsync install-hook    # Add pre-commit hook to .pre-commit-config.yaml
 ```
+
+The `check` command runs during pre-commit and performs two validations:
+1. Link validation - ensures all links in `links.toml` point to existing files/sections
+2. Staleness detection - checks if staged code changes require doc updates
 
 Both `check` and `list-stale` support `--format json` for machine consumption. The JSON output includes file paths, section names, line ranges, and git diffs—everything an AI agent needs to make scoped updates.
