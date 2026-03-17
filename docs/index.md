@@ -67,11 +67,11 @@ docsync bootstrap --apply
 docsync validate-links
 docsync coverage
 
-# Set up pre-commit hook (see Getting Started guide)
+# Set up pre-commit hook
 pre-commit install
 ```
 
-[Getting Started →](getting-started.md)
+For detailed setup instructions, see [Getting Started →](getting-started.md)
 
 ## Agent-First Design
 

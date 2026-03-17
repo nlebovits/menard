@@ -499,10 +499,8 @@ Clear the import graph cache.
 docsync clear-cache
 ```
 
-**Effect:** Deletes `.docsync/cache/` directory.
+**Effect:** Deletes `.docsync/cache/` directory containing import graph cache.
 
-**When to use:** After major refactoring, if cache seems stale.
-
----
+**When to use:** After major refactoring, if cache seems stale, or to reclaim disk space.
 
 

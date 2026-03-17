@@ -1,11 +1,23 @@
 """AST-based symbol extraction for tracking public API changes."""
 
 import ast
+import contextlib
 import hashlib
 import json
+import logging
+import os
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+# Maximum number of entries in the symbols cache (LRU eviction)
+MAX_CACHE_SIZE = 500
+
+# Timeout for git subprocess calls (seconds)
+GIT_TIMEOUT = 5
 
 
 @dataclass
@@ -79,7 +91,16 @@ def extract_symbols_from_file(file_path: Path) -> SymbolInfo:
     try:
         source = file_path.read_text(encoding="utf-8")
         return extract_symbols(source)
-    except Exception:
+    except FileNotFoundError:
+        return SymbolInfo(functions=[], classes=[])
+    except PermissionError as e:
+        logger.warning("Permission denied reading %s: %s", file_path, e)
+        return SymbolInfo(functions=[], classes=[])
+    except UnicodeDecodeError as e:
+        logger.warning("Encoding error reading %s: %s", file_path, e)
+        return SymbolInfo(functions=[], classes=[])
+    except OSError as e:
+        logger.warning("OS error reading %s: %s", file_path, e)
         return SymbolInfo(functions=[], classes=[])
 
 
@@ -91,12 +112,15 @@ def get_file_at_commit(repo_root: Path, file_path: str, commit: str) -> str | No
             cwd=repo_root,
             capture_output=True,
             text=True,
-            timeout=5,
+            timeout=GIT_TIMEOUT,
         )
         if result.returncode == 0:
             return result.stdout
         return None
-    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+    except subprocess.TimeoutExpired:
+        logger.warning("git show timed out for %s at %s", file_path, commit)
+        return None
+    except subprocess.CalledProcessError:
         return None
 
 
@@ -135,7 +159,7 @@ def get_symbol_diff_between_commits(
     return diff_symbols(old_symbols, new_symbols)
 
 
-# --- Caching ---
+# --- Caching with LRU eviction and atomic writes ---
 
 
 def _get_content_hash(content: str) -> str:
@@ -157,19 +181,66 @@ def _load_symbols_cache(repo_root: Path) -> dict[str, dict]:
         return {}
     try:
         with open(cache_path) as f:
-            return json.load(f)
-    except Exception:
+            data = json.load(f)
+            # Validate structure
+            if isinstance(data, dict) and all(isinstance(v, dict) for v in data.values()):
+                return data
+            logger.warning("Invalid cache structure in %s, resetting", cache_path)
+            return {}
+    except json.JSONDecodeError as e:
+        logger.warning("Corrupted cache file %s: %s", cache_path, e)
+        return {}
+    except PermissionError as e:
+        logger.warning("Permission denied reading cache %s: %s", cache_path, e)
+        return {}
+    except OSError as e:
+        logger.warning("Error reading cache %s: %s", cache_path, e)
         return {}
 
 
 def _save_symbols_cache(repo_root: Path, cache: dict[str, dict]) -> None:
-    """Save the symbols cache to disk."""
+    """
+    Save the symbols cache to disk atomically.
+
+    Uses write-to-temp-then-rename pattern to prevent corruption from
+    concurrent writes or crashes.
+    """
     cache_path = _get_symbols_cache_path(repo_root)
     try:
-        with open(cache_path, "w") as f:
-            json.dump(cache, f)
-    except Exception:
-        pass  # Caching is optional
+        # Write to a temp file in the same directory (same filesystem for atomic rename)
+        fd, temp_path = tempfile.mkstemp(
+            dir=cache_path.parent, prefix=".symbols_cache_", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                json.dump(cache, f)
+            # Atomic rename (on POSIX systems)
+            os.replace(temp_path, cache_path)
+        except Exception:
+            # Clean up temp file on error
+            with contextlib.suppress(OSError):
+                os.unlink(temp_path)
+            raise
+    except PermissionError as e:
+        logger.warning("Permission denied writing cache %s: %s", cache_path, e)
+    except OSError as e:
+        logger.warning("Error writing cache %s: %s", cache_path, e)
+
+
+def _evict_lru(cache: dict[str, dict], max_size: int) -> dict[str, dict]:
+    """
+    Evict oldest entries from cache to maintain max_size.
+
+    Since we don't track access time, we evict the first entries
+    (which are oldest by insertion order in Python 3.7+ dicts).
+    """
+    if len(cache) <= max_size:
+        return cache
+
+    # Keep only the most recent entries
+    items = list(cache.items())
+    evict_count = len(items) - max_size
+    return dict(items[evict_count:])
 
 
 def get_symbols_cached(repo_root: Path, content: str) -> SymbolInfo:
@@ -177,15 +248,23 @@ def get_symbols_cached(repo_root: Path, content: str) -> SymbolInfo:
     Get symbols for content, using cache if available.
 
     Cache is keyed by content hash, so same content always returns cached result.
+    Uses LRU eviction to prevent unbounded cache growth.
     """
     content_hash = _get_content_hash(content)
     cache = _load_symbols_cache(repo_root)
 
     if content_hash in cache:
-        return SymbolInfo.from_dict(cache[content_hash])
+        # Move to end (most recently used) by reinserting
+        entry = cache.pop(content_hash)
+        cache[content_hash] = entry
+        return SymbolInfo.from_dict(entry)
 
     symbols = extract_symbols(content)
     cache[content_hash] = symbols.to_dict()
+
+    # Evict old entries if cache is too large
+    cache = _evict_lru(cache, MAX_CACHE_SIZE)
+
     _save_symbols_cache(repo_root, cache)
 
     return symbols

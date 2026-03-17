@@ -1,11 +1,17 @@
 """Git diff-based staleness detection for documentation."""
 
+import logging
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from docsync.sections import parse_markdown_section
 from docsync.toml_links import LinkTarget
+
+logger = logging.getLogger(__name__)
+
+# Timeout for git subprocess calls (seconds)
+GIT_TIMEOUT = 10
 
 
 @dataclass
@@ -76,9 +82,13 @@ def get_last_commit(repo_root: Path, file_path: str) -> str | None:
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         commit = result.stdout.strip()
         return commit if commit else None
+    except subprocess.TimeoutExpired:
+        logger.warning("git log timed out for %s", file_path)
+        return None
     except subprocess.CalledProcessError:
         return None
 
@@ -96,8 +106,12 @@ def get_changed_lines(repo_root: Path, file_path: str, since_commit: str) -> set
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         diff_output = result.stdout
+    except subprocess.TimeoutExpired:
+        logger.warning("git diff timed out for %s", file_path)
+        return set()
     except subprocess.CalledProcessError:
         return set()
 
@@ -143,6 +157,7 @@ def get_staged_changes(repo_root: Path, file_path: str) -> set[int] | None:
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         staged_files = result.stdout.strip().split("\n")
         if file_path not in staged_files:
@@ -155,8 +170,12 @@ def get_staged_changes(repo_root: Path, file_path: str) -> set[int] | None:
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         diff_output = result.stdout
+    except subprocess.TimeoutExpired:
+        logger.warning("git diff --cached timed out for %s", file_path)
+        return None
     except subprocess.CalledProcessError:
         return None
 
@@ -190,8 +209,12 @@ def get_commit_date(repo_root: Path, commit: str) -> str | None:
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         return result.stdout.strip() or None
+    except subprocess.TimeoutExpired:
+        logger.warning("git log timed out for commit %s", commit)
+        return None
     except subprocess.CalledProcessError:
         return None
 
@@ -220,6 +243,7 @@ def get_commits_since(
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         output = result.stdout.strip()
         if not output:
@@ -233,6 +257,9 @@ def get_commits_since(
                     commits.append(CommitInfo(sha=parts[0][:7], date=parts[1], message=parts[2]))
 
         return commits
+    except subprocess.TimeoutExpired:
+        logger.warning("git log timed out for %s since %s", file_path, since_commit)
+        return []
     except subprocess.CalledProcessError:
         return []
 
@@ -252,6 +279,7 @@ def get_code_diff(
             capture_output=True,
             text=True,
             check=True,
+            timeout=GIT_TIMEOUT,
         )
         diff = result.stdout.strip()
         if not diff:
@@ -264,12 +292,80 @@ def get_code_diff(
             return f"{truncated}\n... (truncated, {remaining} more lines)"
 
         return diff
+    except subprocess.TimeoutExpired:
+        logger.warning("git diff timed out for %s", file_path)
+        return None
     except subprocess.CalledProcessError:
         return None
 
 
+def _get_commit_count_between(repo_root: Path, older: str, newer: str) -> int | None:
+    """Get count of commits between two refs. Returns None on error."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--count", f"{older}..{newer}"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=GIT_TIMEOUT,
+        )
+        return int(result.stdout.strip())
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError, ValueError):
+        return None
+
+
+def _find_most_recent_commit(
+    repo_root: Path, code_file: str, transitive_files: list[str] | None
+) -> tuple[str | None, str]:
+    """
+    Find the most recent commit among code_file and its transitive imports.
+
+    Returns (commit_sha, file_that_was_most_recently_modified).
+    Returns (None, code_file) if no commit found.
+    """
+    code_commit = get_last_commit(repo_root, code_file)
+    if not code_commit:
+        return None, code_file
+
+    all_code_files = [code_file] + (transitive_files or [])
+    most_recent_code_commit = code_commit
+    most_recent_code_file = code_file
+
+    for file in all_code_files:
+        commit = get_last_commit(repo_root, file)
+        if commit and commit != most_recent_code_commit:
+            # Check which commit is more recent
+            count = _get_commit_count_between(repo_root, most_recent_code_commit, commit)
+            if count is not None and count > 0:
+                most_recent_code_commit = commit
+                most_recent_code_file = file
+
+    return most_recent_code_commit, most_recent_code_file
+
+
+def _get_first_commit(repo_root: Path) -> str | None:
+    """Get the first commit in the repository."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--max-parents=0", "HEAD"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=GIT_TIMEOUT,
+        )
+        commits = result.stdout.strip().split("\n")
+        return commits[0] if commits else None
+    except (subprocess.TimeoutExpired, subprocess.CalledProcessError):
+        return None
+
+
 def is_doc_stale(
-    repo_root: Path, code_file: str, doc_target: LinkTarget, transitive_files: list[str] = None
+    repo_root: Path,
+    code_file: str,
+    doc_target: LinkTarget,
+    transitive_files: list[str] | None = None,
 ) -> tuple[bool, str]:
     """
     Check if a documentation target is stale relative to code changes.
@@ -290,9 +386,12 @@ def is_doc_stale(
     """
     doc_path = repo_root / doc_target.file
 
-    # Get the last commit that modified the code file
-    code_commit = get_last_commit(repo_root, code_file)
-    if not code_commit:
+    # Get the most recent code commit among all files
+    most_recent_code_commit, most_recent_code_file = _find_most_recent_commit(
+        repo_root, code_file, transitive_files
+    )
+
+    if not most_recent_code_commit:
         # Code file has no git history (new file or not in repo)
         # But first check if docs are being updated in this commit (staged)
         if doc_target.section:
@@ -312,42 +411,6 @@ def is_doc_stale(
                 return False, "Doc being updated in this commit (staged)"
 
         return True, f"{code_file} is new or untracked"
-
-    # Check all files that could trigger staleness (code + transitive imports)
-    all_code_files = [code_file] + (transitive_files or [])
-    most_recent_code_commit = code_commit
-    most_recent_code_file = code_file
-
-    for file in all_code_files:
-        commit = get_last_commit(repo_root, file)
-        if commit and commit != most_recent_code_commit:
-            # Check if this commit is newer
-            try:
-                result = subprocess.run(
-                    ["git", "rev-list", "--count", f"{commit}..HEAD"],
-                    cwd=repo_root,
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                if int(result.stdout.strip()) == 0:
-                    # This commit is at or after HEAD (shouldn't happen)
-                    continue
-
-                # Check which commit is more recent
-                result = subprocess.run(
-                    ["git", "rev-list", "--count", f"{most_recent_code_commit}..{commit}"],
-                    cwd=repo_root,
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                if int(result.stdout.strip()) > 0:
-                    # This commit is more recent
-                    most_recent_code_commit = commit
-                    most_recent_code_file = file
-            except subprocess.CalledProcessError:
-                continue
 
     if doc_target.section:
         # Section-specific staleness check
@@ -391,22 +454,14 @@ def is_doc_stale(
             return True, f"{doc_target.file} is new or untracked"
 
         # Check if doc was updated after code
-        try:
-            result = subprocess.run(
-                ["git", "rev-list", "--count", f"{most_recent_code_commit}..{doc_commit}"],
-                cwd=repo_root,
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            commits_between = int(result.stdout.strip())
-            if commits_between > 0:
-                return False, f"Doc updated after {most_recent_code_file} changed"
-            else:
-                return True, f"Doc unchanged since {most_recent_code_file} changed"
-        except subprocess.CalledProcessError:
+        count = _get_commit_count_between(repo_root, most_recent_code_commit, doc_commit)
+        if count is None:
             # Can't determine order, assume stale
             return True, "Unable to determine commit order"
+        elif count > 0:
+            return False, f"Doc updated after {most_recent_code_file} changed"
+        else:
+            return True, f"Doc unchanged since {most_recent_code_file} changed"
 
 
 def check_staleness_enriched(
@@ -429,7 +484,12 @@ def check_staleness_enriched(
     - Symbol changes (functions/classes added/removed)
     - Code diff (if include_diff=True)
     """
-    # Get basic staleness result first
+    # Find the most recent code commit (shared with is_doc_stale logic)
+    most_recent_code_commit, most_recent_code_file = _find_most_recent_commit(
+        repo_root, code_file, transitive_files
+    )
+
+    # Get basic staleness result
     is_stale, reason = is_doc_stale(repo_root, code_file, doc_target, transitive_files)
 
     result = StalenessResult(
@@ -440,32 +500,8 @@ def check_staleness_enriched(
         section=doc_target.section,
     )
 
-    # Get the commit info for enrichment
-    code_commit = get_last_commit(repo_root, code_file)
-    if not code_commit:
+    if not most_recent_code_commit:
         return result
-
-    # Find the most recent code commit (same logic as is_doc_stale)
-    all_code_files = [code_file] + (transitive_files or [])
-    most_recent_code_commit = code_commit
-    most_recent_code_file = code_file
-
-    for file in all_code_files:
-        commit = get_last_commit(repo_root, file)
-        if commit and commit != most_recent_code_commit:
-            try:
-                check = subprocess.run(
-                    ["git", "rev-list", "--count", f"{most_recent_code_commit}..{commit}"],
-                    cwd=repo_root,
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                )
-                if int(check.stdout.strip()) > 0:
-                    most_recent_code_commit = commit
-                    most_recent_code_file = file
-            except subprocess.CalledProcessError:
-                continue
 
     # Enrich with dates
     result.last_code_commit = most_recent_code_commit[:7]
@@ -486,10 +522,12 @@ def check_staleness_enriched(
             repo_root, most_recent_code_file, doc_commit, max_commits
         )
     else:
-        # Doc has no history, get recent commits on code file
-        result.commits_since = get_commits_since(
-            repo_root, most_recent_code_file, "HEAD~10", max_commits
-        )
+        # Doc has no history, get commits from the first commit in repo
+        first_commit = _get_first_commit(repo_root)
+        if first_commit:
+            result.commits_since = get_commits_since(
+                repo_root, most_recent_code_file, first_commit, max_commits
+            )
 
     # Get symbol changes (AST diff)
     if doc_commit and most_recent_code_file.endswith(".py"):
@@ -502,9 +540,12 @@ def check_staleness_enriched(
             if symbol_diff:
                 result.symbols_added = symbol_diff.functions_added + symbol_diff.classes_added
                 result.symbols_removed = symbol_diff.functions_removed + symbol_diff.classes_removed
-        except Exception:
-            # AST parsing failed, continue without symbol info
-            pass
+        except (ImportError, OSError) as e:
+            logger.debug("Could not get symbol diff: %s", e)
+        except Exception as e:
+            logger.warning(
+                "Unexpected error getting symbol diff for %s: %s", most_recent_code_file, e
+            )
 
     # Get code diff if requested
     if include_diff and doc_commit:

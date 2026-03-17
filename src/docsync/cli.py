@@ -476,16 +476,12 @@ def _count_all_stale_docs(repo_root: Path, config, graph: dict, import_graph: di
     return stale_count
 
 
-def _format_staleness_text(result, show_diff: bool = False, max_commits: int = 5) -> str:
+def _format_staleness_text(result, show_diff: bool = False) -> str:
     """Format a StalenessResult for text output."""
     lines = []
 
-    # Header
-    if result.section:
-        lines.append(f"  {result.doc_target}")
-    else:
-        lines.append(f"  {result.doc_target}")
-
+    # Header (doc_target already includes section if present)
+    lines.append(f"  {result.doc_target}")
     lines.append(f"    Code: {result.code_file}")
 
     # Dates
@@ -495,13 +491,11 @@ def _format_staleness_text(result, show_diff: bool = False, max_commits: int = 5
     if result.last_doc_update:
         lines.append(f"    Last doc update: {result.last_doc_update}")
 
-    # Commits since
+    # Commits since (already limited by check_staleness_enriched)
     if result.commits_since:
         lines.append("    Commits since doc updated:")
-        for commit in result.commits_since[:max_commits]:
+        for commit in result.commits_since:
             lines.append(f"      {commit.sha} ({commit.date}) {commit.message}")
-        if len(result.commits_since) > max_commits:
-            lines.append(f"      ... and {len(result.commits_since) - max_commits} more")
 
     # Symbol changes
     if result.symbols_added or result.symbols_removed:

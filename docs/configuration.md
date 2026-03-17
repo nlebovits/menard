@@ -87,6 +87,8 @@ $ docsync list-stale
 
 The JSON output includes all this metadata for machine consumption—perfect for AI agents making targeted doc updates.
 
+Symbol extraction results are cached in `.docsync/symbols_cache.json` for performance. The cache uses content-based hashing, so identical file contents always return cached results. Old entries are automatically evicted to keep the cache under 500 entries.
+
 ## donttouch
 
 Protect critical content from staleness checks in `.docsync/donttouch`:
