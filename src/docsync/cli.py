@@ -870,9 +870,7 @@ def main() -> int:
     subparsers.add_parser("list-protected", help="List all protection rules")
 
     # skills
-    skills_parser = subparsers.add_parser(
-        "skills", help="List available Claude Code skills"
-    )
+    skills_parser = subparsers.add_parser("skills", help="List available Claude Code skills")
     skills_parser.add_argument(
         "--format", choices=["text", "json"], default="text", help="Output format"
     )
