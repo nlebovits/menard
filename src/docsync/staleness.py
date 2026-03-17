@@ -67,6 +67,60 @@ def get_changed_lines(repo_root: Path, file_path: str, since_commit: str) -> set
     return changed_lines
 
 
+def get_staged_changes(repo_root: Path, file_path: str) -> set[int] | None:
+    """
+    Get line numbers that are staged (changed in index) for file_path.
+    Returns set of 1-indexed line numbers, or None if file is not staged.
+
+    This allows checking if documentation is being updated in the same commit
+    as the code change (issue #20).
+    """
+    try:
+        # Check if file is staged
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--name-only"],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        staged_files = result.stdout.strip().split("\n")
+        if file_path not in staged_files:
+            return None
+
+        # Get diff of staged changes
+        result = subprocess.run(
+            ["git", "diff", "--cached", "--unified=0", "--", file_path],
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        diff_output = result.stdout
+    except subprocess.CalledProcessError:
+        return None
+
+    changed_lines = set()
+
+    # Parse diff hunks (same format as get_changed_lines)
+    for line in diff_output.split("\n"):
+        if line.startswith("@@"):
+            parts = line.split("@@")[1].strip().split()
+            for part in parts:
+                if part.startswith("+"):
+                    range_str = part[1:]
+                    if "," in range_str:
+                        start, count = range_str.split(",")
+                        start = int(start)
+                        count = int(count)
+                        for i in range(start, start + count):
+                            changed_lines.add(i)
+                    else:
+                        changed_lines.add(int(range_str))
+
+    return changed_lines
+
+
 def is_doc_stale(
     repo_root: Path, code_file: str, doc_target: LinkTarget, transitive_files: list[str] = None
 ) -> tuple[bool, str]:
@@ -141,7 +195,15 @@ def is_doc_stale(
 
         start_line, end_line = section_range
 
-        # Get lines that changed in doc since code changed
+        # Check 1: Is the doc file staged with changes to this section? (issue #20)
+        staged_lines = get_staged_changes(repo_root, doc_target.file)
+        if staged_lines is not None:
+            # Doc file is staged - check if staged changes include this section
+            section_updated_in_stage = any(start_line <= line <= end_line for line in staged_lines)
+            if section_updated_in_stage:
+                return False, "Section being updated in this commit (staged)"
+
+        # Check 2: Get lines that changed in doc since code changed (committed history)
         changed_lines = get_changed_lines(repo_root, doc_target.file, most_recent_code_commit)
 
         # Check if any changed lines fall within the section
@@ -152,7 +214,15 @@ def is_doc_stale(
         else:
             return True, f"Section unchanged since {most_recent_code_file} changed"
     else:
-        # Whole-file staleness check (simple timestamp comparison)
+        # Whole-file staleness check
+
+        # Check 1: Is the doc file staged? (issue #20)
+        staged_lines = get_staged_changes(repo_root, doc_target.file)
+        if staged_lines is not None and len(staged_lines) > 0:
+            # Doc file is staged with changes
+            return False, "Doc being updated in this commit (staged)"
+
+        # Check 2: Simple timestamp comparison (committed history)
         doc_commit = get_last_commit(repo_root, doc_target.file)
         if not doc_commit:
             return True, f"{doc_target.file} is new or untracked"
