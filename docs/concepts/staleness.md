@@ -235,7 +235,4 @@ The AI's task is **scoped precisely**:
 
 **Result:** Deterministic constraints make probabilistic updates reliable.
 
-## Next Steps
 
-- [**Protected Content**](donttouch.md) - Guard critical doc sections
-- [**CLI Reference**](../cli/reference.md) - All staleness commands

@@ -248,7 +248,4 @@ Enforce docs for critical modules. Exempt legacy and experimental code.
 
 ---
 
-## Next Steps
 
-- [**CLI Reference**](cli/reference.md) - Command options
-- [**Getting Started**](getting-started.md) - Setup walkthrough

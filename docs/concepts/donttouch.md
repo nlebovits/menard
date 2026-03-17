@@ -159,7 +159,4 @@ The audit will identify:
 
 And suggest adding them to `.docsync/donttouch`.
 
-## Next Steps
 
-- [**Tutorial**](../tutorial.md#step-6-create-donttouch-protections) - See donttouch in action
-- [**Skills**](../skills/audit.md) - Learn about the audit skill

@@ -228,8 +228,4 @@ Starting from 0% coverage, the workflow achieved:
 
 This demonstrates docsync's value: **deterministic staleness detection** enables **reliable, scoped documentation updates**.
 
-## Next Steps
 
-- [**Concepts**](concepts/links.md) - Understand how links work
-- [**Configuration**](configuration.md) - Customize docsync behavior
-- [**Skills**](skills/audit.md) - Learn about the audit skill

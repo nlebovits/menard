@@ -6,8 +6,8 @@ repo_name: nlebovits/docsync
 
 theme:
   name: material
-  logo: .github/branding/vector/default-monochrome-white.svg
-  favicon: .github/branding/profile.png
+  logo: img/logo-white.svg
+  favicon: img/favicon.png
   palette:
     # Light mode
     - scheme: default
@@ -43,6 +43,9 @@ plugins:
             show_root_heading: true
             show_signature_annotations: true
 
+extra_css:
+  - stylesheets/extra.css
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight:
@@ -66,5 +69,4 @@ nav:
   - Configuration: configuration.md
   - Skills:
       - Audit: skills/audit.md
-  - Architecture: architecture.md
   - Contributing: contributing.md

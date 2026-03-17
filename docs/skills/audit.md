@@ -215,8 +215,4 @@ The audit skill **cannot** determine:
 
 It **only** measures **trackability** - how well docsync can verify freshness.
 
-## Next Steps
 
-- [**Tutorial**](../tutorial.md#step-5-run-the-audit-skill) - See audit in action
-- [**Getting Started**](../getting-started.md) - Setup docsync
-- [**Concepts**](../concepts/links.md) - Understand links

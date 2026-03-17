@@ -168,7 +168,4 @@ Or if issues found:
     Section 'NonExistent' not found in docs/api.md
 ```
 
-## Next Steps
 
-- [**Staleness Detection**](staleness.md) - How docsync detects stale docs
-- [**Configuration**](../configuration.md) - Customize link requirements

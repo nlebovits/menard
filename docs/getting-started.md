@@ -145,9 +145,4 @@ Documentation Coverage: 85.0%
     src/draft.py
 ```
 
-## What's Next?
 
-- [**Tutorial**](tutorial.md) - See a real-world onboarding workflow
-- [**Concepts**](concepts/links.md) - Understand how links work
-- [**CLI Reference**](cli/reference.md) - Explore all commands
-- [**Configuration**](configuration.md) - Customize docsync behavior

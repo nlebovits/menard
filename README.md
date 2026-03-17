@@ -2,70 +2,39 @@
   <img src=".github/branding/profile.png" alt="docsync logo" width="200">
 </p>
 
-# docsync
+`docsync` is a pre-commit hook and CLI tool that deterministically flags when code changes should trigger documentation updates. It outputs agent-friendly JSON with targeted information about what changed and which doc sections need review.
 
-**Keep your code and documentation in sync with centralized linking and section-aware staleness detection.**
+When working fast with tools like Claude, docs drift quickly. Agents excel at changing code but struggle to understand how code changes should trigger doc updates. `docsync` addresses this with deterministic checks:
 
-[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue)](https://nlebovits.github.io/docsync/)
+1. **Pre-commit enforcement**: Flags code changes that should trigger docs updates. Outputs JSON with file paths, sections, and git diffs. Commits block until docs are updated.
 
-docsync is a pre-commit hook and CLI tool that ensures documentation stays fresh by tracking relationships between code files and their documentation.
+2. **Audit skill**: Scores documentation structure for trackability. Identifies which docs can be deterministically verified and which rely on manual review. Makes concrete recommendations.
 
-## Quick Install
+All output is AI-first; `docsync` assumes Claude (or another agent) will consume and act on it.
 
-```bash
-# Install with uv (recommended)
-uv pip install git+https://github.com/nlebovits/docsync.git
-
-# Or with pip
-pip install git+https://github.com/nlebovits/docsync.git
-```
-
-## Features
-
-- **Centralized TOML links** - No inline comments, all relationships in `.docsync/links.toml`
-- **Section-level precision** - Link to specific doc sections for targeted staleness checking
-- **Git diff-based staleness** - Detect if doc sections were updated since code changed
-- **Pre-commit enforcement** - Block commits when documentation is outdated
-- **Agent-native JSON output** - Deterministic checks for AI agents
-- **Auto-bootstrap** - Intelligently generate links from conventions
-- **Doc audit skill** - Claude Code skill for trackability analysis
-
-## Documentation
-
-**📚 [Full documentation →](https://nlebovits.github.io/docsync/)**
-
-- [Getting Started](https://nlebovits.github.io/docsync/getting-started/) - Installation and setup
-- [Tutorial](https://nlebovits.github.io/docsync/tutorial/) - Real-world onboarding workflow
-- [CLI Reference](https://nlebovits.github.io/docsync/cli/reference/) - All commands
-- [Configuration](https://nlebovits.github.io/docsync/configuration/) - Customize behavior
+**📚 [Full docs](https://nlebovits.github.io/docsync/)** | **[Tutorial](https://nlebovits.github.io/docsync/tutorial/)** | **[CLI Reference](https://nlebovits.github.io/docsync/cli/reference/)**
 
 ## Quick Start
 
 ```bash
-# Initialize in your repository
+# Install
+uv pip install git+https://github.com/nlebovits/docsync.git
+
+# Initialize (creates .docsync/links.toml and pyproject.toml config)
 docsync init
 
-# Define code-doc links in .docsync/links.toml
-# [[link]]
-# code = "src/auth.py"
-# docs = ["docs/api.md#Authentication"]
+# Define relationships: code file → doc section
+echo '[[link]]
+code = "src/auth.py"
+docs = ["docs/api.md#Authentication"]' >> .docsync/links.toml
 
-# Install pre-commit hook
+# Enable pre-commit enforcement
 docsync install-hook
 
-# Check for stale docs
-docsync check
+# Now commits block if docs are stale:
+git commit -m "refactor auth"
+# ❌ Blocked: docs/api.md#Authentication unchanged since src/auth.py changed
 ```
-
-## How It Works
-
-docsync provides **deterministic staleness detection** via git diff analysis:
-
-1. You define relationships in `.docsync/links.toml`
-2. docsync detects when code changes but linked docs don't
-3. Commits are blocked until docs are updated
-
-See the [Tutorial](https://nlebovits.github.io/docsync/tutorial/) for a complete walkthrough.
 
 ## License
 
@@ -73,4 +42,4 @@ Apache-2.0
 
 ## Contributing
 
-Contributions welcome! See [Contributing Guide](https://nlebovits.github.io/docsync/contributing/) for details.
+See [Contributing Guide](https://nlebovits.github.io/docsync/contributing/)

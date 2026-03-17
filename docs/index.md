@@ -1,61 +1,45 @@
 <p align="center">
-  <img src="../.github/branding/profile.png" alt="docsync logo" width="200">
+  <img src="img/favicon.png" alt="docsync logo" width="200">
 </p>
 
-# docsync
+`docsync` is a pre-commit hook and CLI tool that deterministically flags when code changes should trigger documentation updates. It outputs agent-friendly JSON with targeted information about what changed and which doc sections need review.
 
-**Keep your code and documentation in sync with centralized linking and section-aware staleness detection.**
+When working fast with tools like Claude, docs drift quickly. Agents excel at changing code but struggle to understand how code changes should trigger doc updates. `docsync` addresses this with deterministic checks:
 
-docsync is a pre-commit hook and CLI tool that ensures documentation stays fresh by tracking relationships between code files and their documentation.
+1. **Pre-commit enforcement**: Flags code changes that should trigger docs updates. Outputs JSON with file paths, sections, and git diffs. Commits block until docs are updated.
 
-## Key Features
+2. **Audit skill**: Scores documentation structure for trackability. Identifies which docs can be deterministically verified and which rely on manual review. Makes concrete recommendations.
 
-- **Centralized TOML links** - Define code↔doc relationships in `.docsync/links.toml` (no inline comments!)
-- **Section-level precision** - Link to specific doc sections (`docs/api.md#Authentication`) for targeted staleness checking
-- **Git diff-based staleness** - Uses `git diff` to detect if doc sections were updated since code changed
-- **Import-aware staleness** - Detects when docs are stale due to transitive code changes
-- **Pre-commit enforcement** - Blocks commits when documentation is missing or outdated
-- **Agent-native UX** - JSON output, deterministic checks, and scoped update tasks for AI agents
-- **Auto-bootstrap** - Intelligently generates links from filename conventions and content analysis
-- **Doc audit skill** - Claude Code skill that analyzes docs for trackability
+All output is AI-first; `docsync` assumes Claude (or another agent) will consume and act on it.
 
-## Quick Install
+**📚 [Full docs](https://nlebovits.github.io/docsync/)** | **[Tutorial](https://nlebovits.github.io/docsync/tutorial/)** | **[CLI Reference](https://nlebovits.github.io/docsync/cli/reference/)**
+
+## Quick Start
 
 ```bash
-# Install with uv (recommended)
+# Install
 uv pip install git+https://github.com/nlebovits/docsync.git
+
+# Initialize (creates .docsync/links.toml and pyproject.toml config)
+docsync init
+
+# Define relationships: code file → doc section
+echo '[[link]]
+code = "src/auth.py"
+docs = ["docs/api.md#Authentication"]' >> .docsync/links.toml
+
+# Enable pre-commit enforcement
+docsync install-hook
+
+# Now commits block if docs are stale:
+git commit -m "refactor auth"
+# ❌ Blocked: docs/api.md#Authentication unchanged since src/auth.py changed
 ```
 
-## How It Works
+## License
 
-docsync provides **deterministic staleness detection** that enables **scoped, reliable updates**:
+Apache-2.0
 
-1. **You define relationships** in `.docsync/links.toml`:
-   ```toml
-   [[link]]
-   code = "src/auth.py"
-   docs = ["docs/api.md#Authentication"]
-   ```
+## Contributing
 
-2. **docsync detects staleness** via git diff analysis:
-   ```bash
-   $ git commit -m "refactor: extract auth helpers"
-   
-   docsync: ❌ commit blocked
-   
-   Stale documentation detected:
-     docs/api.md#Authentication
-       Code: src/auth.py
-       Reason: Section unchanged since src/auth.py changed
-   ```
-
-3. **You update the precise section** - no guessing, no reading 500-line files:
-   - Update lines 45-89 in `docs/api.md` (the Authentication section)
-   - Don't touch other sections
-
-## Next Steps
-
-- [**Getting Started**](getting-started.md) - Installation and setup
-- [**Tutorial**](tutorial.md) - Real-world onboarding workflow
-- [**Concepts**](concepts/links.md) - How docsync works
-- [**CLI Reference**](cli/reference.md) - All commands
+See [Contributing Guide](https://nlebovits.github.io/docsync/contributing/)

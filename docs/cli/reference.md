@@ -471,7 +471,4 @@ docsync clear-cache
 
 ---
 
-## Next Steps
 
-- [**Configuration**](../configuration.md) - Customize command behavior
-- [**Getting Started**](../getting-started.md) - Setup walkthrough
