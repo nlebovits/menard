@@ -32,8 +32,8 @@ repos:
       # Check for stale documentation
       - id: docsync-check
         name: docsync-check
-        description: Check for stale documentation when code changes
+        description: Check for stale documentation when code or docs change
         entry: uv run docsync check
         language: system
         pass_filenames: false
-        files: ^src/.*\.py$
+        always_run: true

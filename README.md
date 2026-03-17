@@ -35,7 +35,22 @@ docsync bootstrap --apply
 docsync validate-links
 docsync coverage
 
-# Now commits block if docs are stale (via .pre-commit-config.yaml)
+# Set up pre-commit hook to block stale docs
+cat > .pre-commit-config.yaml << 'EOF'
+repos:
+  - repo: local
+    hooks:
+      - id: docsync-check
+        name: docsync-check
+        entry: uv run docsync check
+        language: system
+        pass_filenames: false
+        always_run: true
+EOF
+
+pre-commit install
+
+# Now commits block if docs are stale
 git commit -m "refactor auth"
 # ❌ Blocked: docs/api.md#Authentication unchanged since src/auth.py changed
 ```
