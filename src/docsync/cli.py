@@ -3,6 +3,7 @@
 import argparse
 import json
 import sys
+import tomllib
 from pathlib import Path
 
 from docsync.config import load_config
@@ -18,16 +19,176 @@ from docsync.toml_links import (
     validate_links,
 )
 
+# Directories to exclude from source detection
+EXCLUDED_DIRS = frozenset(
+    {
+        "tests",
+        "test",
+        "docs",
+        "doc",
+        "examples",
+        "example",
+        "scripts",
+        "bin",
+        "build",
+        "dist",
+        ".venv",
+        "venv",
+        ".tox",
+        ".nox",
+        ".eggs",
+        "__pycache__",
+        ".git",
+        ".hg",
+        ".svn",
+        "node_modules",
+        "vendor",
+        ".mypy_cache",
+        ".pytest_cache",
+        ".ruff_cache",
+    }
+)
+
+
+def _is_valid_package_pattern(pattern: str) -> bool:
+    """Check if a pattern is valid (no wildcards in the package path)."""
+    # Reject patterns with wildcards before the final /**/*.py
+    prefix = pattern.removesuffix("/**/*.py")
+    return "*" not in prefix and "?" not in prefix and "[" not in prefix
+
+
+def detect_source_directories(repo_root: Path) -> list[str]:
+    """Detect Python source directories in a project.
+
+    Detection strategy:
+    1. Check pyproject.toml for explicit package configuration (hatch, setuptools, poetry)
+    2. Look for directories containing __init__.py (Python packages)
+    3. Fall back to src/ if nothing found
+
+    Returns a list of glob patterns like ["src/**/*.py", "mypackage/**/*.py"]
+
+    Note: Namespace packages (without __init__.py) are not detected by strategy 2.
+    Use pyproject.toml configuration for namespace packages.
+    """
+    patterns: list[str] = []
+
+    # Strategy 1: Check pyproject.toml for package configuration
+    pyproject_path = repo_root / "pyproject.toml"
+    if pyproject_path.exists():
+        try:
+            with open(pyproject_path, "rb") as f:
+                data = tomllib.load(f)
+
+            # Check [tool.hatch.build.targets.wheel] packages
+            hatch_packages = (
+                data.get("tool", {})
+                .get("hatch", {})
+                .get("build", {})
+                .get("targets", {})
+                .get("wheel", {})
+                .get("packages", [])
+            )
+            for pkg in hatch_packages:
+                pattern = f"{pkg}/**/*.py"
+                if _is_valid_package_pattern(pattern):
+                    patterns.append(pattern)
+
+            # Check [tool.setuptools.packages]
+            setuptools = data.get("tool", {}).get("setuptools", {})
+            if "packages" in setuptools:
+                for pkg in setuptools["packages"]:
+                    pattern = f"{pkg}/**/*.py"
+                    if _is_valid_package_pattern(pattern):
+                        patterns.append(pattern)
+
+            # Check [tool.setuptools.package-dir] - maps package names to paths
+            if "package-dir" in setuptools:
+                for _pkg_name, path in setuptools["package-dir"].items():
+                    if path:  # Skip empty string (root package)
+                        pattern = f"{path}/**/*.py"
+                        if _is_valid_package_pattern(pattern):
+                            patterns.append(pattern)
+
+            # Check [tool.poetry.packages] - Poetry configuration
+            poetry_packages = data.get("tool", {}).get("poetry", {}).get("packages", [])
+            for pkg_config in poetry_packages:
+                if isinstance(pkg_config, dict):
+                    include = pkg_config.get("include", "")
+                    from_dir = pkg_config.get("from", "")
+                    if include:
+                        path = f"{from_dir}/{include}" if from_dir else include
+                        pattern = f"{path}/**/*.py"
+                        if _is_valid_package_pattern(pattern):
+                            patterns.append(pattern)
+
+            if patterns:
+                return patterns
+
+        except (OSError, tomllib.TOMLDecodeError):
+            # Fall through to directory scanning on parse errors
+            pass
+
+    # Strategy 2: Look for directories with __init__.py
+    package_dirs: set[str] = set()
+
+    try:
+        for init_file in repo_root.rglob("__init__.py"):
+            try:
+                # Get the package directory (parent of __init__.py)
+                pkg_dir = init_file.parent
+                rel_path = pkg_dir.relative_to(repo_root)
+
+                # Skip excluded directories
+                parts = rel_path.parts
+                if any(part.lower() in EXCLUDED_DIRS for part in parts):
+                    continue
+
+                # Skip hidden directories
+                if any(part.startswith(".") for part in parts):
+                    continue
+
+                # Determine the package pattern based on structure
+                if len(parts) >= 2 and parts[0].lower() == "src":
+                    # src layout: src/mypackage/ -> use src/mypackage/**/*.py
+                    # Find the actual package (first dir after src with __init__.py)
+                    pkg_path = parts[0] + "/" + parts[1]
+                    package_dirs.add(pkg_path)
+                elif len(parts) >= 1:
+                    # Flat layout: mypackage/ -> use mypackage/**/*.py
+                    package_dirs.add(parts[0])
+
+            except (OSError, ValueError):
+                # Skip files we can't access or paths we can't resolve
+                continue
+
+    except OSError:
+        # Handle permission errors or symlink issues during traversal
+        pass
+
+    # Convert to glob patterns
+    for pkg_dir in sorted(package_dirs):
+        patterns.append(f"{pkg_dir}/**/*.py")
+
+    # Strategy 3: Fall back to src/ if nothing found
+    if not patterns:
+        patterns.append("src/**/*.py")
+
+    return patterns
+
 
 def cmd_init(args: argparse.Namespace) -> int:
     """Initialize docsync configuration."""
     repo_root = Path.cwd()
     pyproject_path = repo_root / "pyproject.toml"
 
+    # Auto-detect source directories
+    detected_patterns = detect_source_directories(repo_root)
+    require_links_toml = ", ".join(f'"{p}"' for p in detected_patterns)
+
     if not pyproject_path.exists():
         print("⚠️  No pyproject.toml found. Creating minimal configuration...")
         pyproject_path.write_text(
-            """[project]
+            f"""[project]
 name = "project"
 version = "0.1.0"
 
@@ -35,7 +196,7 @@ version = "0.1.0"
 mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
-require_links = ["src/**/*.py"]
+require_links = [{require_links_toml}]
 exempt = ["tests/**"]
 doc_paths = ["docs/**/*.md", "README.md"]
 """
@@ -51,17 +212,21 @@ doc_paths = ["docs/**/*.md", "README.md"]
         # Append configuration
         with open(pyproject_path, "a") as f:
             f.write(
-                """
+                f"""
 [tool.docsync]
 mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
-require_links = ["src/**/*.py"]
+require_links = [{require_links_toml}]
 exempt = ["tests/**"]
 doc_paths = ["docs/**/*.md", "README.md"]
 """
             )
         print(f"✓ Added [tool.docsync] to {pyproject_path}")
+
+    # Report detected source directories
+    if detected_patterns != ["src/**/*.py"]:
+        print(f"✓ Detected source directories: {detected_patterns}")
 
     # Create .docsync directory
     docsync_dir = repo_root / ".docsync"
