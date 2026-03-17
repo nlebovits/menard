@@ -48,35 +48,35 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
         violations = check_protections(repo_root, staged_files, protection_rules)
         if violations:
             message_lines = ["⛔ Cannot commit: protected content modified\n"]
-            
+
             # Group violations by type for clearer output
             file_violations = [v for v in violations if v.type == "protected_file"]
             section_violations = [v for v in violations if v.type == "protected_section"]
             literal_violations = [v for v in violations if v.type == "protected_literal"]
-            
+
             if file_violations:
                 message_lines.append("Protected files:")
                 for v in file_violations:
                     message_lines.append(f"  • {v.file}")
-            
+
             if section_violations:
                 if file_violations:
                     message_lines.append("")
                 message_lines.append("Protected sections:")
                 for v in section_violations:
                     message_lines.append(f"  • {v.file}#{v.section}")
-            
+
             if literal_violations:
                 if file_violations or section_violations:
                     message_lines.append("")
                 message_lines.append("Protected strings:")
                 for v in literal_violations:
                     literal_preview = v.literal[:50] + "..." if len(v.literal) > 50 else v.literal
-                    message_lines.append(f"  • {v.file}: \"{literal_preview}\"")
-            
+                    message_lines.append(f'  • {v.file}: "{literal_preview}"')
+
             message_lines.append("\nTo bypass: git commit --no-verify")
             message_lines.append("To modify rules: edit .docsync/donttouch")
-            
+
             return HookResult(
                 passed=False,
                 stale_docs=[],
@@ -206,9 +206,7 @@ def _matches_require_links(file_path: str, config, repo_root: Path) -> bool:
     return _match_globs(file, config.require_links, repo_root)
 
 
-def _format_message(
-    config, stale_docs: list[dict], missing_links: list[str], passed: bool
-) -> str:
+def _format_message(config, stale_docs: list[dict], missing_links: list[str], passed: bool) -> str:
     """Format the output message."""
     if not stale_docs and not missing_links:
         return "docsync: ✓ all documentation is up to date"

@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from docsync.config import DocsyncConfig, load_config
+from docsync.config import load_config
 from docsync.donttouch import check_protections, load_donttouch
 from docsync.graph import build_docsync_graph, get_linked_docs
 from docsync.imports import build_import_graph
@@ -403,7 +403,7 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
 
     # Check all code files in graph
     stale_items = []
-    code_files = {k for k in graph.keys() if not any(k.endswith(ext) for ext in [".md", ".rst"])}
+    code_files = {k for k in graph if not any(k.endswith(ext) for ext in [".md", ".rst"])}
 
     for code_file in code_files:
         doc_targets = get_linked_docs(code_file, graph, config)
@@ -534,7 +534,7 @@ def cmd_coverage(args: argparse.Namespace) -> int:
         print(f"  Undocumented: {len(undocumented)}")
 
         if undocumented and len(undocumented) <= 10:
-            print(f"\nUndocumented files:")
+            print("\nUndocumented files:")
             for f in undocumented:
                 print(f"  {f}")
         elif undocumented:
@@ -556,17 +556,14 @@ def cmd_info(args: argparse.Namespace) -> int:
     # Find links for this file
     related_links = []
     for link in links:
-        if link.code == file_path:
-            related_links.append(link)
-        elif any(str(doc) == file_path for doc in link.docs):
+        if link.code == file_path or any(str(doc) == file_path for doc in link.docs):
             related_links.append(link)
 
     if args.format == "json":
         result = {
             "file": file_path,
             "links": [
-                {"code": link.code, "docs": [str(d) for d in link.docs]}
-                for link in related_links
+                {"code": link.code, "docs": [str(d) for d in link.docs]} for link in related_links
             ],
             "connected_files": list(graph.get(file_path, set())),
         }
@@ -717,9 +714,7 @@ def cmd_list_protected(args: argparse.Namespace) -> int:
 
 def main() -> int:
     """Main CLI entry point."""
-    parser = argparse.ArgumentParser(
-        description="docsync: Keep code and documentation in sync"
-    )
+    parser = argparse.ArgumentParser(description="docsync: Keep code and documentation in sync")
     subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
     # init

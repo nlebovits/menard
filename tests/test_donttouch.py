@@ -1,7 +1,6 @@
 """Tests for protected content guard."""
 
 import subprocess
-from pathlib import Path
 
 from docsync.donttouch import Violation, check_protections, load_donttouch
 
@@ -136,9 +135,7 @@ def test_check_scoped_literal_protection(tmp_path):
     # Create file with literal
     config = tmp_path / "pyproject.toml"
     config.write_text('license = "Apache-2.0"\n')
-    subprocess.run(
-        ["git", "add", "pyproject.toml"], cwd=tmp_path, check=True, capture_output=True
-    )
+    subprocess.run(["git", "add", "pyproject.toml"], cwd=tmp_path, check=True, capture_output=True)
     subprocess.run(
         ["git", "commit", "-m", "Initial"],
         cwd=tmp_path,
@@ -148,10 +145,8 @@ def test_check_scoped_literal_protection(tmp_path):
     )
 
     # Remove literal
-    config.write_text('license = "Apache-2.0"\n')
-    subprocess.run(
-        ["git", "add", "pyproject.toml"], cwd=tmp_path, check=True, capture_output=True
-    )
+    config.write_text("# No license field\n")
+    subprocess.run(["git", "add", "pyproject.toml"], cwd=tmp_path, check=True, capture_output=True)
 
     # Create protection rule
     donttouch = tmp_path / ".docsync" / "donttouch"
@@ -211,9 +206,7 @@ def test_check_global_literal_protection(tmp_path):
 
 def test_violation_to_dict():
     """Should convert Violation to dictionary."""
-    v = Violation(
-        type="protected_file", file="LICENSE", reason="File is protected"
-    )
+    v = Violation(type="protected_file", file="LICENSE", reason="File is protected")
     assert v.to_dict() == {
         "type": "protected_file",
         "file": "LICENSE",
@@ -281,7 +274,7 @@ def test_path_traversal_rejection(tmp_path, capsys):
 
     rules = load_donttouch(tmp_path)
     captured = capsys.readouterr()
-    
+
     # Should have warnings
     assert "path traversal" in captured.err
     # Should not add any patterns
@@ -292,14 +285,14 @@ def test_line_length_limit(tmp_path, capsys):
     """Should reject lines exceeding MAX_LINE_LENGTH."""
     donttouch = tmp_path / ".docsync" / "donttouch"
     donttouch.parent.mkdir(parents=True)
-    
+
     # Create a line that's too long
     long_line = "A" * 20000  # 20KB
     donttouch.write_text(f"{long_line}\nLICENSE\n")
 
     rules = load_donttouch(tmp_path)
     captured = capsys.readouterr()
-    
+
     # Should have warning about long line
     assert "line too long" in captured.err
     # Should still process valid lines
@@ -310,13 +303,13 @@ def test_parse_error_handling(tmp_path, capsys):
     """Should handle file read errors gracefully."""
     donttouch = tmp_path / ".docsync" / "donttouch"
     donttouch.parent.mkdir(parents=True)
-    
+
     # Create file with invalid UTF-8
     donttouch.write_bytes(b"LICENSE\n\xff\xfe\nREADME.md\n")
 
     rules = load_donttouch(tmp_path)
     captured = capsys.readouterr()
-    
+
     # Should return None and print error
     assert rules is None
     assert "invalid UTF-8" in captured.err

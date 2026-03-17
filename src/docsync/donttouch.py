@@ -77,7 +77,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
 
     for line in content.splitlines():
         line_num += 1
-        
+
         # Security: Check line length to prevent DoS
         if len(line) > MAX_LINE_LENGTH:
             print(
@@ -86,7 +86,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                 file=sys.stderr,
             )
             continue
-        
+
         line = line.strip()
 
         # Skip comments and empty lines
@@ -99,7 +99,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
             if len(parts) == 2:
                 file_path = parts[0].strip()
                 section_name = parts[1].strip()
-                
+
                 # Security: Prevent path traversal
                 if ".." in file_path or file_path.startswith("/"):
                     print(
@@ -108,7 +108,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                         file=sys.stderr,
                     )
                     continue
-                
+
                 if file_path and section_name:
                     if file_path not in section_protections:
                         section_protections[file_path] = []
@@ -121,7 +121,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
             if match:
                 file_path = match.group(1).strip()
                 literal = match.group(2)
-                
+
                 # Security: Prevent path traversal
                 if ".." in file_path or file_path.startswith("/"):
                     print(
@@ -130,7 +130,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                         file=sys.stderr,
                     )
                     continue
-                
+
                 if file_path not in scoped_literals:
                     scoped_literals[file_path] = []
                 scoped_literals[file_path].append(literal)
@@ -156,7 +156,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                 file=sys.stderr,
             )
             continue
-        
+
         file_patterns.append(line)
 
     # Create PathSpec from patterns using gitignore-style matching
@@ -289,7 +289,10 @@ def _check_literal_protection(
                         type="protected_literal",
                         file=file,
                         literal=literal,
-                        reason=f"Required string '{literal}' removed from {file} (whitespace-normalized)",
+                        reason=(
+                            f"Required string '{literal}' removed from {file} "
+                            "(whitespace-normalized)"
+                        ),
                     )
                 )
 
@@ -315,7 +318,10 @@ def _check_literal_protection(
                         type="protected_literal",
                         file=file,
                         literal=literal,
-                        reason=f"Global protected string '{literal}' removed (whitespace-normalized)",
+                        reason=(
+                            f"Global protected string '{literal}' removed "
+                            "(whitespace-normalized)"
+                        ),
                     )
                 )
 
