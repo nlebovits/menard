@@ -1,1 +1,1 @@
-Apache 2.0 - see LICENSE for details
+Apache 2.0 License
