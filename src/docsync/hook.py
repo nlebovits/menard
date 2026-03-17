@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from docsync.config import load_config
+from docsync.donttouch import check_protections, load_donttouch
 from docsync.graph import build_docsync_graph, get_linked_docs
 from docsync.imports import build_import_graph
 from docsync.staleness import is_doc_stale
@@ -29,17 +30,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
     Returns a HookResult with pass/fail and structured information about
     what's stale or missing.
     """
-    # Load config
-    config = load_config(repo_root)
-    if config is None:
-        return HookResult(
-            passed=True,
-            stale_docs=[],
-            missing_links=[],
-            message="docsync: not configured (skipping checks)",
-        )
-
-    # Get staged files
+    # Get staged files first (needed for both protection and staleness checks)
     if staged_files is None:
         staged_files = _get_staged_files(repo_root)
 
@@ -49,6 +40,38 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             stale_docs=[],
             missing_links=[],
             message="docsync: no staged files",
+        )
+
+    # Check 1: Protected content (fast fail)
+    protection_rules = load_donttouch(repo_root)
+    if protection_rules:
+        violations = check_protections(repo_root, staged_files, protection_rules)
+        if violations:
+            message_lines = ["docsync: ⛔ protected content violations detected\n"]
+            for v in violations:
+                if v.section:
+                    message_lines.append(f"  {v.file}#{v.section}: {v.reason}")
+                else:
+                    message_lines.append(f"  {v.file}: {v.reason}")
+            message_lines.append("\nProtected files/sections/strings cannot be modified.")
+            message_lines.append(
+                "See .docsync/donttouch for protection rules or use --no-verify to force commit."
+            )
+            return HookResult(
+                passed=False,
+                stale_docs=[],
+                missing_links=[],
+                message="\n".join(message_lines),
+            )
+
+    # Load config
+    config = load_config(repo_root)
+    if config is None:
+        return HookResult(
+            passed=True,
+            stale_docs=[],
+            missing_links=[],
+            message="docsync: not configured (skipping checks)",
         )
 
     # Build graphs
