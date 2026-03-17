@@ -180,9 +180,13 @@ This is **accurate**: updating a different section doesn't clear staleness for A
 
 | Command | Description |
 |---------|-------------|
-| `docsync check [--format json]` | Check if docs are stale (pre-commit mode) |
-| `docsync list-stale [--format json\|paths]` | List all stale documentation |
+| `docsync check [--format json]` | Check staged files for doc freshness (CI/pre-commit) |
+| `docsync list-stale [--format json\|paths]` | List ALL stale docs regardless of recent changes (audit) |
 | `docsync affected-docs --files <paths>` | Show docs affected by code changes |
+
+**When to use each:**
+- **`check`**: Use in pre-commit hooks and CI pipelines. Only examines docs linked to staged/specified files. Fast and focused.
+- **`list-stale`**: Use for periodic audits and reviews. Scans the entire repository for any stale documentation. Comprehensive but slower.
 
 ### Information & Coverage
 
