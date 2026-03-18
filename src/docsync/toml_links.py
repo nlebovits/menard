@@ -34,6 +34,7 @@ class Link:
     code: str
     docs: list[LinkTarget]
     note: str | None = None
+    auto_generated: bool = False
 
 
 def load_links(repo_root: Path) -> list[Link]:
@@ -58,6 +59,7 @@ def load_links(repo_root: Path) -> list[Link]:
         code = entry.get("code")
         docs = entry.get("docs", [])
         note = entry.get("note")
+        auto_generated = entry.get("auto_generated", False)
 
         if not code:
             raise ValueError(f"Link entry missing 'code' field: {entry}")
@@ -68,7 +70,7 @@ def load_links(repo_root: Path) -> list[Link]:
         # Parse doc targets
         doc_targets = [LinkTarget.parse(doc) for doc in docs]
 
-        links.append(Link(code=code, docs=doc_targets, note=note))
+        links.append(Link(code=code, docs=doc_targets, note=note, auto_generated=auto_generated))
 
     return links
 
@@ -180,6 +182,9 @@ def generate_links_toml(links: list[Link]) -> str:
             for doc in link.docs:
                 lines.append(f'  "{doc}",')
             lines.append("]")
+
+        if link.auto_generated:
+            lines.append("auto_generated = true")
 
         if link.note:
             lines.append(f'note = "{link.note}"')

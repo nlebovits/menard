@@ -573,8 +573,16 @@ def cmd_check(args: argparse.Namespace) -> int:
     if diff_lines != 30:  # Non-default value implies show_diff
         show_diff = True
 
+    # Load links to check auto_generated flag
+    links = load_links(repo_root)
+
+    # Build mapping of code_file -> Link for quick lookup
+    code_to_link = {link.code: link for link in links}
+
     # Check each file
     stale_results = []
+    skipped_auto_generated = 0
+
     for file_path in files_to_check:
         doc_targets = get_linked_docs(file_path, graph, config)
 
@@ -585,6 +593,12 @@ def cmd_check(args: argparse.Namespace) -> int:
         transitive_imports = []
         if config.transitive_depth > 0 and file_path in import_graph:
             transitive_imports = list(import_graph[file_path])
+
+        # Check if this code file's link is auto-generated
+        link = code_to_link.get(file_path)
+        if link and link.auto_generated:
+            skipped_auto_generated += len(doc_targets)
+            continue
 
         # Check staleness for each doc target (enriched)
         for doc_target_str in doc_targets:
@@ -607,22 +621,33 @@ def cmd_check(args: argparse.Namespace) -> int:
             total_stale = _count_all_stale_docs(repo_root, config, graph, import_graph)
             if total_stale > 0:
                 print("✓ Staged files have up-to-date documentation")
+                if skipped_auto_generated > 0:
+                    print(f"  ({skipped_auto_generated} auto-generated docs skipped)")
                 print(
                     f"  Hint: {total_stale} stale doc(s) exist elsewhere. "
                     "Run 'docsync list-stale' for full audit."
                 )
             else:
                 print("✓ All documentation is up to date")
+                if skipped_auto_generated > 0:
+                    print(f"  ({skipped_auto_generated} auto-generated docs skipped)")
         else:
-            print(json.dumps({"stale": []}, indent=2))
+            result = {"stale": [], "skipped_auto_generated": skipped_auto_generated}
+            print(json.dumps(result, indent=2))
         return 0
 
     # Report stale docs
     if args.format == "json":
         stale_dicts = [r.to_dict(include_diff=show_diff) for r in stale_results]
-        print(json.dumps({"stale": stale_dicts}, indent=2))
+        result = {"stale": stale_dicts, "skipped_auto_generated": skipped_auto_generated}
+        print(json.dumps(result, indent=2))
     else:
-        print(f"❌ Found {len(stale_results)} stale documentation targets:\n")
+        skip_msg = (
+            f" ({skipped_auto_generated} auto-generated docs skipped)"
+            if skipped_auto_generated > 0
+            else ""
+        )
+        print(f"❌ Found {len(stale_results)} stale documentation targets{skip_msg}:\n")
         for result in stale_results:
             print(_format_staleness_text(result, show_diff=show_diff))
 
@@ -652,8 +677,15 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
     if diff_lines != 30:  # Non-default value implies show_diff
         show_diff = True
 
+    # Load links to check auto_generated flag
+    links = load_links(repo_root)
+
+    # Build mapping of code_file -> Link for quick lookup
+    code_to_link = {link.code: link for link in links}
+
     # Check all code files in graph
     stale_results = []
+    skipped_auto_generated = 0
     code_files = {k for k in graph if not any(k.endswith(ext) for ext in [".md", ".rst"])}
 
     for code_file in code_files:
@@ -662,6 +694,12 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
         transitive_imports = []
         if config.transitive_depth > 0 and code_file in import_graph:
             transitive_imports = list(import_graph[code_file])
+
+        # Check if this code file's link is auto-generated
+        link = code_to_link.get(code_file)
+        if link and link.auto_generated:
+            skipped_auto_generated += len(doc_targets)
+            continue
 
         for doc_target_str in doc_targets:
             target = LinkTarget.parse(doc_target_str)
@@ -679,7 +717,8 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
 
     if args.format == "json":
         stale_dicts = [r.to_dict(include_diff=show_diff) for r in stale_results]
-        print(json.dumps({"stale": stale_dicts}, indent=2))
+        result = {"stale": stale_dicts, "skipped_auto_generated": skipped_auto_generated}
+        print(json.dumps(result, indent=2))
     elif args.format == "paths":
         # Just print unique doc paths
         doc_paths = {r.doc_target.split("#")[0] for r in stale_results}
@@ -687,9 +726,19 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
             print(doc_path)
     else:
         if not stale_results:
-            print("✓ No stale documentation")
+            skip_msg = (
+                f" ({skipped_auto_generated} auto-generated docs skipped)"
+                if skipped_auto_generated > 0
+                else ""
+            )
+            print(f"✓ No stale documentation{skip_msg}")
         else:
-            print(f"Found {len(stale_results)} stale documentation targets:\n")
+            skip_msg = (
+                f" ({skipped_auto_generated} auto-generated docs skipped)"
+                if skipped_auto_generated > 0
+                else ""
+            )
+            print(f"Found {len(stale_results)} stale documentation targets{skip_msg}:\n")
             for result in stale_results:
                 print(_format_staleness_text(result, show_diff=show_diff))
 
