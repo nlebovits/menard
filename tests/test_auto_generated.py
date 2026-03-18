@@ -378,10 +378,8 @@ docs = ["docs/tutorial.md"]
     output = json.loads(captured.out)
 
     # Should have 1 stale doc (tutorial.md) and 1 skipped (reference.md)
-    assert (
-        output["skipped_auto_generated"] == 1
-    ), f"Expected 1 skipped, got {output['skipped_auto_generated']}"
-    assert len(output["stale"]) == 1, f"Expected 1 stale, got {len(output['stale'])}"
+    assert output["skipped_auto_generated"] == 1
+    assert len(output["stale"]) == 1
     assert output["stale"][0]["doc_target"] == "docs/tutorial.md"
 
 
