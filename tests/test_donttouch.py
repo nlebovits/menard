@@ -1,5 +1,6 @@
 """Tests for protected content guard."""
 
+import os
 import subprocess
 
 from docsync.donttouch import Violation, check_protections, load_donttouch
@@ -66,6 +67,7 @@ def test_check_file_protection(tmp_path):
     donttouch.write_text("LICENSE\n*.lock\n")
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     violations = check_protections(tmp_path, ["LICENSE", "package.lock"], rules)
 
     assert len(violations) == 2
@@ -97,7 +99,7 @@ def test_check_section_protection(tmp_path):
         cwd=tmp_path,
         check=True,
         capture_output=True,
-        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **subprocess.os.environ},
+        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **os.environ},
     )
 
     # Modify License section
@@ -110,6 +112,7 @@ def test_check_section_protection(tmp_path):
     donttouch.write_text("README.md#License\n")
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     violations = check_protections(tmp_path, ["README.md"], rules)
 
     assert len(violations) == 1
@@ -141,7 +144,7 @@ def test_check_scoped_literal_protection(tmp_path):
         cwd=tmp_path,
         check=True,
         capture_output=True,
-        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **subprocess.os.environ},
+        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **os.environ},
     )
 
     # Remove literal
@@ -154,6 +157,7 @@ def test_check_scoped_literal_protection(tmp_path):
     donttouch.write_text('pyproject.toml: "Apache-2.0"\n')
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     violations = check_protections(tmp_path, ["pyproject.toml"], rules)
 
     assert len(violations) == 1
@@ -184,7 +188,7 @@ def test_check_global_literal_protection(tmp_path):
         cwd=tmp_path,
         check=True,
         capture_output=True,
-        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **subprocess.os.environ},
+        env={"PRE_COMMIT_ALLOW_NO_CONFIG": "1", **os.environ},
     )
 
     # Remove literal
@@ -197,6 +201,7 @@ def test_check_global_literal_protection(tmp_path):
     donttouch.write_text('"Apache 2.0 - see LICENSE for details"\n')
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     violations = check_protections(tmp_path, ["README.md"], rules)
 
     assert len(violations) == 1
@@ -261,6 +266,7 @@ def test_whitespace_normalization(tmp_path):
     subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True, capture_output=True)
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     # Should NOT violate because whitespace is normalized
     violations = check_protections(tmp_path, ["README.md"], rules)
     assert len(violations) == 0
@@ -273,6 +279,7 @@ def test_path_traversal_rejection(tmp_path, capsys):
     donttouch.write_text("../../etc/passwd\n../../../secrets\n/etc/shadow\n")
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     captured = capsys.readouterr()
 
     # Should have warnings
@@ -291,6 +298,7 @@ def test_line_length_limit(tmp_path, capsys):
     donttouch.write_text(f"{long_line}\nLICENSE\n")
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     captured = capsys.readouterr()
 
     # Should have warning about long line
@@ -322,4 +330,5 @@ def test_empty_literal_rejection(tmp_path):
     donttouch.write_text('""')
 
     rules = load_donttouch(tmp_path)
+    assert rules is not None
     assert len(rules.global_literals) == 0

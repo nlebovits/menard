@@ -71,8 +71,11 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
                     message_lines.append("")
                 message_lines.append("Protected strings:")
                 for v in literal_violations:
-                    literal_preview = v.literal[:50] + "..." if len(v.literal) > 50 else v.literal
-                    message_lines.append(f'  • {v.file}: "{literal_preview}"')
+                    if v.literal is not None:
+                        literal_preview = (
+                            v.literal[:50] + "..." if len(v.literal) > 50 else v.literal
+                        )
+                        message_lines.append(f'  • {v.file}: "{literal_preview}"')
 
             message_lines.append("\nTo bypass: git commit --no-verify")
             message_lines.append("To modify rules: edit .docsync/donttouch")

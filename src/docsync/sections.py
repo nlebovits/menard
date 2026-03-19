@@ -56,7 +56,7 @@ def parse_markdown_section(file_path: Path, heading: str) -> tuple[int, int] | N
                         start_line = i
                 else:
                     # We're past our section, check if this ends it
-                    if level <= heading_level:
+                    if heading_level is not None and level <= heading_level:
                         # Higher-level or same-level heading ends our section
                         return (start_line, i - 1)
 
