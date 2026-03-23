@@ -42,10 +42,7 @@ testbed/
 # UV/ruff cache
 .ruff_cache/
 
-# docsync cache (but keep config files)
-.docsync/*
-!.docsync/links.toml
-!.docsync/donttouch
+# menard cache (but keep config files)
 .menard/cache/
 .menard/*.json
 .menard/*.state

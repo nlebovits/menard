@@ -117,6 +117,8 @@ The audit identifies:
 
 ### Step 5: Add Protections
 
+Protect content that shouldn't be flagged as stale when related code changes:
+
 ```bash
 $ cat .menard/donttouch
 # License sections
@@ -126,9 +128,11 @@ docs/contributing.md#License
 # Brand colors
 docs/BRANDING.md#Color Palette
 
-# Version requirements
+# Version requirements (this project's minimum Python version)
 "Python 3.10+"
 ```
+
+**Note:** The protected literal above is portolan-cli's Python requirement. Your project may have different literals to protect (version badges, license text, brand colors, etc.).
 
 ### Step 6: Bootstrap Additional Links
 
