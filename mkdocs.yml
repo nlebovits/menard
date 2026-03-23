@@ -1,8 +1,8 @@
-site_name: docsync
+site_name: menard
 site_description: Keep your code and documentation in sync
-site_url: https://nlebovits.github.io/docsync/
-repo_url: https://github.com/nlebovits/docsync
-repo_name: nlebovits/docsync
+site_url: https://nlebovits.github.io/menard/
+repo_url: https://github.com/nlebovits/menard
+repo_name: nlebovits/menard
 
 theme:
   name: material

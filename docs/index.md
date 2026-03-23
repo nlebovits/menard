@@ -52,7 +52,7 @@ The audit analyzes structure (tables, code blocks, headings), file references, s
 
 ```bash
 # Install
-uv pip install git+https://github.com/nlebovits/docsync.git
+pip install menard  # or: uv add menard
 
 # Initialize
 docsync init

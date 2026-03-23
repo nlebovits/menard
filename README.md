@@ -14,13 +14,13 @@ When working fast with tools like Claude, docs drift quickly. Agents excel at ch
 
 **3. Audit for Deterministic Maintainability** - Score documentation structure for trackability using the audit skill in Claude Code. Get concrete suggestions for improvements.
 
-**📚 [Full docs](https://nlebovits.github.io/docsync/)** | **[Getting Started](https://nlebovits.github.io/docsync/getting-started/)** | **[CLI Reference](https://nlebovits.github.io/docsync/cli/reference/)**
+**📚 [Full docs](https://nlebovits.github.io/menard/)** | **[Getting Started](https://nlebovits.github.io/menard/getting-started/)** | **[CLI Reference](https://nlebovits.github.io/menard/cli/reference/)**
 
 ## Quick Start
 
 ```bash
 # Install
-uv pip install git+https://github.com/nlebovits/docsync.git
+pip install menard  # or: uv add menard
 
 # Initialize
 docsync init
@@ -46,4 +46,4 @@ Apache-2.0
 
 ## Contributing
 
-[Contributing Guide](https://nlebovits.github.io/docsync/contributing/)
+[Contributing Guide](https://nlebovits.github.io/menard/contributing/)

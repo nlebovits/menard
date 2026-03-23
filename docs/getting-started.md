@@ -3,7 +3,7 @@
 ## Installation
 
 ```bash
-uv pip install git+https://github.com/nlebovits/docsync.git
+pip install menard  # or: uv add menard
 ```
 
 ## Quick Start

@@ -3,8 +3,8 @@
 ## Development Setup
 
 ```bash
-git clone https://github.com/nlebovits/docsync.git
-cd docsync
+git clone https://github.com/nlebovits/menard.git
+cd menard
 uv sync --all-extras       # Install dependencies + dev extras
 uv run pre-commit install  # Install pre-commit hooks
 uv run pytest              # Run tests
