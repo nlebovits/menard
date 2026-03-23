@@ -219,6 +219,7 @@ Validation catches typos and missing sections. Coverage shows what percentage of
 
 ```bash
 menard check           # Pre-commit: validate links + check staged files for stale docs
+menard check --all     # Manual audit: check ALL tracked files (not just staged)
 menard list-stale      # Audit: list ALL stale docs across entire repo
 menard fix             # Interactive mode: review/update/mark/ignore stale docs
 menard fix-mark-reviewed --code FILE --doc TARGET  # Mark as reviewed (ephemeral)
