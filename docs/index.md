@@ -28,7 +28,7 @@ Prevent accidental changes to licenses, brand assets, and policies:
 ```bash
 git commit -m "update requirements"
 # ⚠️  Warning: Protected literal changed
-#   "Python 3.11+" → "Python 3.10+"
+#   "Python 3.10+" → "Python 3.9+"
 #   This is protected in .menard/donttouch
 ```
 

@@ -444,7 +444,7 @@ Protected sections:
   CLAUDE.md#Terminology
 
 Global literals:
-  "Python 3.11+"
+  "Python 3.10+"
   "#7730E1"
 ```
 
@@ -457,7 +457,7 @@ Global literals:
     "docs/contributing.md#Code of Conduct"
   ],
   "protected_literals": [
-    "Python 3.11+",
+    "Python 3.10+",
     "#7730E1"
   ]
 }
@@ -486,6 +486,209 @@ Available Claude Code skills:
 ```
 
 **When to use:** Discovering available skills, integration with Claude Code.
+
+---
+
+## Fix Commands
+
+These commands help resolve stale documentation without necessarily updating the docs.
+
+### fix
+
+Interactive mode to resolve stale documentation.
+
+```bash
+menard fix
+```
+
+**Purpose:** Walk through each stale doc interactively and choose how to resolve it.
+
+**Interactive options for each stale item:**
+
+- `u` - **Update** - Open the doc for editing (marks as needing update)
+- `m` - **Mark reviewed** - "I looked at this, docs don't need changes" (ephemeral)
+- `i` - **Ignore** - Permanently skip staleness checks for this link
+- `s` - **Skip** - Do nothing for now
+- `q` - **Quit** - Exit interactive mode
+
+**Example session:**
+
+```bash
+$ menard fix
+
+Stale: docs/api.md#Authentication
+  Code: src/auth.py
+  Last code change: 2026-03-17 (abc1234: feat: add logging)
+
+  [u]pdate  [m]ark reviewed  [i]gnore  [s]kip  [q]uit
+  > m
+  ✓ Marked as reviewed
+
+Stale: docs/models.md
+  Code: src/models/user.py
+  ...
+```
+
+**When to use:** Periodic cleanup of stale docs, especially after refactoring.
+
+**Note:** Requires a TTY (interactive terminal). For scripting, use `fix-mark-reviewed` or `fix-ignore`.
+
+---
+
+### fix-mark-reviewed
+
+Mark a code→doc relationship as reviewed (ephemeral).
+
+```bash
+menard fix-mark-reviewed --code FILE --doc TARGET [--reviewed-by NAME] [--format text|json]
+```
+
+**Options:**
+
+- `--code` - Code file path (required)
+- `--doc` - Doc target as `file#section` (required)
+- `--reviewed-by` - Reviewer name (default: `user`)
+- `--format` - Output format (default: `text`)
+
+**Effect:** Records that the documentation was reviewed at the current code commit. The review is valid until the code file changes again.
+
+**Example:**
+
+```bash
+$ menard fix-mark-reviewed --code src/auth.py --doc docs/api.md#Authentication
+✓ Marked as reviewed at commit abc1234
+```
+
+**When to use:**
+
+- Code change doesn't affect documented behavior (logging, internal refactors)
+- Cosmetic code changes (formatting, comments)
+- Changes to non-documented internals
+
+**How it works:** Stores a review record with the current code commit SHA. When `list-stale` or `check` runs, it compares the stored commit against the current code state. If the code hasn't changed since the review, the link is considered fresh.
+
+---
+
+### fix-ignore
+
+Permanently ignore a code→doc relationship.
+
+```bash
+menard fix-ignore --code FILE --doc TARGET [--format text|json]
+```
+
+**Options:**
+
+- `--code` - Code file path (required)
+- `--doc` - Doc target as `file#section` (required)
+- `--format` - Output format (default: `text`)
+
+**Effect:** Adds `ignore = true` to the link in `.menard/links.toml`. This permanently skips staleness checks for this relationship.
+
+**Example:**
+
+```bash
+$ menard fix-ignore --code src/legacy.py --doc docs/legacy.md
+✓ Added ignore=true to link in .menard/links.toml
+```
+
+**When to use:**
+
+- The link was too broad and shouldn't exist
+- Deprecated code that won't be updated
+- Intentionally divergent documentation
+
+**Note:** This modifies `links.toml`, so the change should be committed. Unlike `fix-mark-reviewed`, this is permanent until you manually remove the `ignore = true` flag.
+
+---
+
+### clean-reviewed
+
+Clean up reviewed state.
+
+```bash
+menard clean-reviewed [--all] [--format text|json]
+```
+
+**Options:**
+
+- `--all` - Remove all reviews, not just orphaned ones
+- `--format` - Output format (default: `text`)
+
+**Effect:** Removes review records for deleted files (orphaned reviews). With `--all`, removes all review records.
+
+**Example:**
+
+```bash
+$ menard clean-reviewed
+✓ Removed 3 review(s)
+
+$ menard clean-reviewed --all
+✓ Removed 12 review(s)
+```
+
+**When to use:** After deleting files that had reviews, or to reset all review state.
+
+---
+
+## Review Workflow
+
+Understanding when to use `fix-mark-reviewed` vs `fix-ignore`:
+
+### Decision Tree
+
+```
+Code changed, docs flagged stale
+    │
+    ├─► Does the doc need updating?
+    │       │
+    │       ├─► Yes → Update the doc, commit both
+    │       │
+    │       └─► No → Why not?
+    │               │
+    │               ├─► Code change doesn't affect docs
+    │               │   (logging, internal refactor, cosmetic)
+    │               │   → fix-mark-reviewed (ephemeral)
+    │               │
+    │               └─► This link shouldn't exist
+    │                   (too broad, deprecated, intentional)
+    │                   → fix-ignore (permanent)
+```
+
+### Example Scenario
+
+```bash
+$ menard list-stale
+Found 1 stale documentation target:
+
+  docs/reference/cli.md
+    Code: portolan_cli/cli.py
+    Last code change: 2026-03-20 (def456)
+    Commits since doc updated:
+      def456 (2026-03-20) chore: add debug logging
+```
+
+The change was just adding debug logging—docs don't need updating:
+
+```bash
+$ menard fix-mark-reviewed --code portolan_cli/cli.py --doc docs/reference/cli.md
+✓ Marked as reviewed at commit def456
+
+$ menard list-stale
+✓ All documentation is up-to-date
+```
+
+Later, if `cli.py` changes again (a real feature), it will be flagged stale again. The review only lasts until the next code modification.
+
+### Comparison
+
+| Aspect | `fix-mark-reviewed` | `fix-ignore` |
+|--------|---------------------|--------------|
+| **Duration** | Until next code change | Permanent |
+| **Stored in** | `.menard/reviewed.state` | `.menard/links.toml` |
+| **Commit needed** | No (state file) | Yes (links.toml) |
+| **Use case** | "This change doesn't need doc update" | "This link shouldn't trigger checks" |
+| **Reversible** | Automatic (next change) | Manual (edit links.toml) |
 
 ---
 

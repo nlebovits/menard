@@ -1,8 +1,9 @@
 """TOML link file parsing and validation."""
 
-import tomllib
 from dataclasses import dataclass
 from pathlib import Path
+
+from menard._compat import tomllib
 
 
 @dataclass

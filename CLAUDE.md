@@ -14,7 +14,7 @@ uv run ruff format . # Format
 
 ## Project Standards
 
-- Python 3.11+ required
+- Python 3.10+ required
 - Conventional Commits: `feat:`, `fix:`, `docs:`
 - Version with commitizen: `uv run cz bump`
 

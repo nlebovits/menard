@@ -167,7 +167,7 @@ docs/contributing.md#Code of Conduct
 CLAUDE.md#Terminology (ENFORCED)
 
 # Literal protection - warn if these strings change
-"Python 3.11+"
+"Python 3.10+"
 "Apache-2.0"
 "#7730E1"
 ```

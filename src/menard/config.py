@@ -1,8 +1,9 @@
 """Configuration parsing from pyproject.toml."""
 
-import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from menard._compat import tomllib
 
 
 @dataclass

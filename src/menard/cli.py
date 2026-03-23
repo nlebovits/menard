@@ -3,9 +3,9 @@
 import argparse
 import json
 import sys
-import tomllib
 from pathlib import Path
 
+from menard._compat import tomllib
 from menard.config import load_config
 from menard.donttouch import check_protections, load_donttouch
 from menard.graph import build_menard_graph, get_linked_docs
@@ -1134,7 +1134,7 @@ def cmd_skills(args: argparse.Namespace) -> int:
 
 def cmd_fix_mark_reviewed(args: argparse.Namespace) -> int:
     """Mark a code→doc relationship as reviewed."""
-    from datetime import UTC, datetime
+    from datetime import datetime, timezone
 
     repo_root = Path.cwd()
 
@@ -1167,7 +1167,7 @@ def cmd_fix_mark_reviewed(args: argparse.Namespace) -> int:
     review = Review(
         code_file=code_path,
         doc_target=doc_target,
-        reviewed_at=datetime.now(UTC).isoformat(),
+        reviewed_at=datetime.now(timezone.utc).isoformat(),
         code_commit_at_review=current_commit[:SHA_SHORT_LENGTH],
         reviewed_by=args.reviewed_by,
     )
@@ -1296,7 +1296,7 @@ def _open_editor_at_line(file_path: Path, line: int) -> bool:
 
 def cmd_fix_interactive(args: argparse.Namespace) -> int:
     """Interactive mode to resolve stale documentation."""
-    from datetime import UTC, datetime
+    from datetime import datetime, timezone
 
     from menard.reviewed import find_review, is_review_valid
 
@@ -1416,7 +1416,7 @@ def cmd_fix_interactive(args: argparse.Namespace) -> int:
                         review = Review(
                             code_file=item.code_file,
                             doc_target=item.doc_target,
-                            reviewed_at=datetime.now(UTC).isoformat(),
+                            reviewed_at=datetime.now(timezone.utc).isoformat(),
                             code_commit_at_review=current_commit[:SHA_SHORT_LENGTH],
                             reviewed_by="user",
                         )
@@ -1431,7 +1431,7 @@ def cmd_fix_interactive(args: argparse.Namespace) -> int:
                     review = Review(
                         code_file=item.code_file,
                         doc_target=item.doc_target,
-                        reviewed_at=datetime.now(UTC).isoformat(),
+                        reviewed_at=datetime.now(timezone.utc).isoformat(),
                         code_commit_at_review=current_commit[:SHA_SHORT_LENGTH],
                         reviewed_by="user",
                     )

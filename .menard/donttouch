@@ -11,7 +11,7 @@ mkdocs.yml#palette
 docs/stylesheets/extra.css
 
 # Version requirement
-"Python 3.11+"
+"Python 3.10+"
 
 # Apache license identifier
 "Apache-2.0"
