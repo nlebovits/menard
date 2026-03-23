@@ -372,6 +372,9 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
             for doc_path in repo_root.glob(doc_pattern):
                 if not doc_path.is_file():
                     continue
+                # Skip docs matching exclude_docs patterns
+                if _match_globs(doc_path, config.exclude_docs, repo_root):
+                    continue
 
                 doc_rel = str(doc_path.relative_to(repo_root))
 
@@ -392,6 +395,9 @@ def cmd_bootstrap(args: argparse.Namespace) -> int:
             for doc_pattern in config.doc_paths:
                 for doc_path in repo_root.glob(doc_pattern):
                     if not doc_path.is_file():
+                        continue
+                    # Skip docs matching exclude_docs patterns
+                    if _match_globs(doc_path, config.exclude_docs, repo_root):
                         continue
 
                     try:

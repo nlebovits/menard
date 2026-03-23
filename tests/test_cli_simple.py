@@ -168,6 +168,41 @@ def test_cmd_bootstrap_basic(tmp_path, monkeypatch):
     assert result in (0, 1)
 
 
+def test_cmd_bootstrap_exclude_docs(tmp_path, monkeypatch, capsys):
+    """Test bootstrap excludes docs matching exclude_docs patterns."""
+    monkeypatch.chdir(tmp_path)
+
+    # Config with exclude_docs for ADRs
+    config = tmp_path / "pyproject.toml"
+    config.write_text("""[tool.menard]
+require_links = ["src/**/*.py"]
+doc_paths = ["docs/**/*.md"]
+exclude_docs = ["**/adr/**"]
+""")
+
+    # Create source file
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "auth.py").write_text("pass")
+
+    # Create docs - one regular, one ADR (should be excluded)
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "auth.md").write_text("# Auth docs")
+
+    adr_dir = docs / "adr"
+    adr_dir.mkdir()
+    (adr_dir / "auth.md").write_text("# ADR: Auth decision")
+
+    result = cmd_bootstrap(Namespace(apply=False))
+    captured = capsys.readouterr()
+
+    # Should propose link to docs/auth.md but NOT docs/adr/auth.md
+    assert "docs/auth.md" in captured.out
+    assert "docs/adr/auth.md" not in captured.out
+    assert result == 0
+
+
 def test_cmd_skills_no_dir(tmp_path, monkeypatch):
     """Test skills command when no .claude/skills directory exists."""
     monkeypatch.chdir(tmp_path)
