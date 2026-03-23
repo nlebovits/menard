@@ -73,6 +73,9 @@ menard coverage
 # Check for stale docs (JSON output for agents)
 menard list-stale --format json
 
+# Check all files (useful for manual audits outside pre-commit)
+menard check --all
+
 # Fix stale docs interactively
 menard fix
 

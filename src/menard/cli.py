@@ -557,6 +557,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     """Check if docs linked to staged/specified files are stale (CI/pre-commit mode)."""
     from menard.reviewed import find_review, is_review_valid
 
+    # Check mutual exclusion early
+    use_all = getattr(args, "all", False)
+    staged_files_arg = getattr(args, "staged_files", None)
+
+    if use_all and staged_files_arg:
+        print("Error: --all and --staged-files are mutually exclusive")
+        return 1
+
     repo_root = Path.cwd()
     config = load_config(repo_root)
 
@@ -570,13 +578,27 @@ def cmd_check(args: argparse.Namespace) -> int:
         print("⚠️  No links defined in .menard/links.toml")
         return 0
 
-    # Get files to check (staged files in pre-commit context)
-    if args.staged_files:
-        files_to_check = args.staged_files.split(",")
-    else:
-        # Get staged files from git
-        import subprocess
+    import subprocess
 
+    if staged_files_arg:
+        files_to_check = staged_files_arg.split(",")
+    elif use_all:
+        # Get all git-tracked files
+        try:
+            result = subprocess.run(
+                ["git", "ls-files"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            files_to_check = result.stdout.strip().split("\n")
+            files_to_check = [f for f in files_to_check if f]
+        except subprocess.CalledProcessError:
+            print("⚠️  Not in a git repository")
+            return 1
+    else:
+        # Get staged files from git (default pre-commit behavior)
         try:
             result = subprocess.run(
                 ["git", "diff", "--cached", "--name-only"],
@@ -987,27 +1009,47 @@ def cmd_clear_cache(args: argparse.Namespace) -> int:
 
 
 def cmd_check_protected(args: argparse.Namespace) -> int:
-    """Check for violations in staged files."""
+    """Check for violations in staged or all tracked files."""
     import subprocess
 
     repo_root = Path.cwd()
+    use_all = getattr(args, "all", False)
 
-    # Get staged files
-    try:
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-    except subprocess.CalledProcessError:
-        print("Error: Not in a git repository")
-        return 1
-
-    staged_files = [f for f in result.stdout.strip().split("\n") if f]
-    if not staged_files:
-        print("No staged files")
-        return 0
+    # Get files to check
+    if use_all:
+        # Get all git-tracked files
+        try:
+            result = subprocess.run(
+                ["git", "ls-files"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print("Error: Not in a git repository")
+            return 1
+        files_to_check = [f for f in result.stdout.strip().split("\n") if f]
+        if not files_to_check:
+            print("No tracked files")
+            return 0
+    else:
+        # Get staged files (default pre-commit behavior)
+        try:
+            result = subprocess.run(
+                ["git", "diff", "--cached", "--name-only"],
+                cwd=repo_root,
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        except subprocess.CalledProcessError:
+            print("Error: Not in a git repository")
+            return 1
+        files_to_check = [f for f in result.stdout.strip().split("\n") if f]
+        if not files_to_check:
+            print("No staged files")
+            return 0
 
     # Load protection rules
     rules = load_donttouch(repo_root)
@@ -1016,7 +1058,7 @@ def cmd_check_protected(args: argparse.Namespace) -> int:
         return 0
 
     # Check for violations
-    violations = check_protections(repo_root, staged_files, rules)
+    violations = check_protections(repo_root, files_to_check, rules)
 
     if not violations:
         print("✓ No protection violations")
@@ -1506,6 +1548,11 @@ def main() -> int:
     )
     check_parser.add_argument("--staged-files", help="Comma-separated list of files")
     check_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Check all git-tracked files (for manual audits/CI)",
+    )
+    check_parser.add_argument(
         "--format", choices=["text", "json"], default="text", help="Output format"
     )
     check_parser.add_argument(
@@ -1565,7 +1612,14 @@ def main() -> int:
     subparsers.add_parser("clear-cache", help="Clear import graph cache")
 
     # check-protected
-    subparsers.add_parser("check-protected", help="Check staged files for protection violations")
+    check_protected_parser = subparsers.add_parser(
+        "check-protected", help="Check staged files for protection violations"
+    )
+    check_protected_parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Check all git-tracked files (for manual audits/CI)",
+    )
 
     # list-protected
     subparsers.add_parser("list-protected", help="List all protection rules")

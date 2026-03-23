@@ -160,19 +160,22 @@ Documentation Coverage: 85.0%
 Check staged files for doc freshness (CI/pre-commit).
 
 ```bash
-menard check [--staged-files FILES] [--format text|json] [--show-diff] [--diff-lines N]
+menard check [--all] [--staged-files FILES] [--format text|json] [--show-diff] [--diff-lines N]
 ```
 
 **Options:**
 
+- `--all` - Check all git-tracked files (for manual audits/CI)
 - `--staged-files` - Comma-separated list of files (overrides git staged)
 - `--format` - Output format (default: `text`)
 - `--show-diff` - Include git diff of changed code
 - `--diff-lines N` - Max lines of diff to show (default: 30, implies `--show-diff`)
 
+**Note:** `--all` and `--staged-files` are mutually exclusive.
+
 **Purpose:** Fast, focused check for pre-commit hooks and CI pipelines.
 
-**Scope:** Only examines docs linked to **staged files** (or specified files).
+**Scope:** By default, only examines docs linked to **staged files**. Use `--all` to check all tracked files.
 
 **Example (text):**
 
