@@ -711,11 +711,11 @@ Later, if `cli.py` changes again (a real feature), it will be flagged stale agai
 
 ---
 
-## Discovery Commands
+## Duplicate Detection
 
 ### brevity
 
-Find semantically similar documentation sections using local embeddings.
+Find semantically similar documentation sections using local embeddings. Requires `menard[brevity]` optional dependency.
 
 ```bash
 menard brevity [--threshold N] [--format text|json] [--model NAME] [--no-cache]

@@ -17,7 +17,7 @@ When working fast with tools like Claude, docs drift quickly. Agents excel at ch
 
 **📚 [Full docs](https://nlebovits.github.io/menard/)** | **[Getting Started](https://nlebovits.github.io/menard/getting-started/)** | **[CLI Reference](https://nlebovits.github.io/menard/cli/reference/)**
 
-## Three Core Use Cases
+## Core Use Cases
 
 ### 1. Track Doc Drift
 
@@ -45,6 +45,16 @@ Use the [audit skill](https://nlebovits.github.io/menard/skills/) to analyze how
 
 ```
 > Audit my documentation
+```
+
+### 4. Find Duplicate Content
+
+Use `menard brevity` to find semantically similar sections across your docs using local embeddings. No API keys needed—runs entirely on your machine.
+
+```bash
+menard brevity --threshold 0.95
+# README.md#License ↔ docs/index.md#License (1.00)
+# README.md#Quick Start ↔ docs/getting-started.md#Quick Start (0.96)
 ```
 
 ## Quick Start

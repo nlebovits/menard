@@ -6,7 +6,7 @@
 
 When working fast with tools like Claude, docs drift quickly. Agents excel at changing code but struggle to understand how code changes should trigger doc updates. `menard` addresses this with deterministic checks.
 
-## Three Core Use Cases
+## Core Use Cases
 
 ### 1. Track Doc Drift
 
@@ -34,6 +34,16 @@ Use the [audit skill](skills.md) to analyze how easily your codebase and docs ca
 
 ```
 > Audit my documentation
+```
+
+### 4. Find Duplicate Content
+
+Use [`menard brevity`](cli/reference.md#brevity) to find semantically similar sections across your docs using local embeddings. No API keys needed—runs entirely on your machine.
+
+```bash
+menard brevity --threshold 0.95
+# README.md#License ↔ docs/index.md#License (1.00)
+# README.md#Quick Start ↔ docs/getting-started.md#Quick Start (0.96)
 ```
 
 ## Agent-First Design

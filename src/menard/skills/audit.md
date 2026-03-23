@@ -49,6 +49,9 @@ cat .menard/donttouch 2>/dev/null || echo "No donttouch file"
 
 # Run coverage to see current state
 menard coverage
+
+# Find duplicate content (requires menard[brevity])
+menard brevity --threshold 0.95 2>/dev/null || echo "Install menard[brevity] for duplicate detection"
 ```
 
 ### Step 2: Scan Documentation
@@ -117,6 +120,27 @@ README.md#License
 
 # Version pins
 pyproject.toml: "python >= 3.10"
+```
+
+#### Duplicate content suggestions
+
+When `menard brevity` finds duplicates:
+
+```
+## Duplicate Content (from menard brevity)
+
+INTENTIONAL (no action needed):
+  README.md#License ↔ docs/index.md#License (1.00)
+  → Standard pattern: docs site mirrors README
+
+CONSIDER CONSOLIDATING:
+  docs/api.md#Authentication ↔ docs/getting-started.md#Auth Setup (0.93)
+  → Both explain the same auth flow
+  → SUGGEST: Keep one, link to it from the other
+
+SUGGEST: Add source-of-truth marker
+  If README.md#Quick Start is canonical, add to the duplicate:
+  "See [Quick Start](../README.md#quick-start) for the canonical version."
 ```
 
 #### Restructuring suggestions
