@@ -1,12 +1,12 @@
-"""Tests for docsync fix CLI commands."""
+"""Tests for menard fix CLI commands."""
 
 import json
 import subprocess
 from argparse import Namespace
 from unittest.mock import patch
 
-from docsync.reviewed import Review, load_reviews, save_review
-from docsync.toml_links import load_links
+from menard.reviewed import Review, load_reviews, save_review
+from menard.toml_links import load_links
 
 
 def test_cmd_fix_mark_reviewed_creates_review(tmp_path, monkeypatch):
@@ -28,12 +28,12 @@ def test_cmd_fix_mark_reviewed_creates_review(tmp_path, monkeypatch):
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
 
-    # Create .docsync directory
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
+    # Create .menard directory
+    menard = tmp_path / ".menard"
+    menard.mkdir()
 
     # Import and call the command
-    from docsync.cli import cmd_fix_mark_reviewed
+    from menard.cli import cmd_fix_mark_reviewed
 
     result = cmd_fix_mark_reviewed(
         Namespace(
@@ -72,12 +72,12 @@ def test_cmd_fix_mark_reviewed_json_output(tmp_path, monkeypatch, capsys):
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True)
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
+    menard = tmp_path / ".menard"
+    menard.mkdir()
 
     import json
 
-    from docsync.cli import cmd_fix_mark_reviewed
+    from menard.cli import cmd_fix_mark_reviewed
 
     result = cmd_fix_mark_reviewed(
         Namespace(
@@ -99,10 +99,10 @@ def test_cmd_fix_ignore_adds_flag(tmp_path, monkeypatch):
     """Test fix ignore adds ignore=true to links.toml."""
     monkeypatch.chdir(tmp_path)
 
-    # Create docsync dir with links
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    links_file = docsync / "links.toml"
+    # Create menard dir with links
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    links_file = menard / "links.toml"
     links_file.write_text(
         """[[link]]
 code = "src/auth.py"
@@ -110,7 +110,7 @@ docs = ["docs/api.md#Authentication"]
 """
     )
 
-    from docsync.cli import cmd_fix_ignore
+    from menard.cli import cmd_fix_ignore
 
     result = cmd_fix_ignore(
         Namespace(
@@ -132,11 +132,11 @@ def test_cmd_fix_ignore_link_not_found(tmp_path, monkeypatch):
     """Test fix ignore fails gracefully when link doesn't exist."""
     monkeypatch.chdir(tmp_path)
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text("")
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text("")
 
-    from docsync.cli import cmd_fix_ignore
+    from menard.cli import cmd_fix_ignore
 
     result = cmd_fix_ignore(
         Namespace(
@@ -159,10 +159,10 @@ def test_cmd_clean_reviewed_removes_orphaned(tmp_path, monkeypatch):
     (src / "exists.py").write_text("pass")
 
     # Create reviews for both existing and non-existing files
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
+    menard = tmp_path / ".menard"
+    menard.mkdir()
 
-    from docsync.reviewed import Review, save_review
+    from menard.reviewed import Review, save_review
 
     save_review(
         tmp_path,
@@ -183,7 +183,7 @@ def test_cmd_clean_reviewed_removes_orphaned(tmp_path, monkeypatch):
         ),
     )
 
-    from docsync.cli import cmd_clean_reviewed
+    from menard.cli import cmd_clean_reviewed
 
     result = cmd_clean_reviewed(Namespace(all=False, format="text"))
 
@@ -201,8 +201,8 @@ def test_cmd_clean_reviewed_all(tmp_path, monkeypatch):
     src.mkdir()
     (src / "auth.py").write_text("pass")
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
+    menard = tmp_path / ".menard"
+    menard.mkdir()
 
     save_review(
         tmp_path,
@@ -214,7 +214,7 @@ def test_cmd_clean_reviewed_all(tmp_path, monkeypatch):
         ),
     )
 
-    from docsync.cli import cmd_clean_reviewed
+    from menard.cli import cmd_clean_reviewed
 
     result = cmd_clean_reviewed(Namespace(all=True, format="text"))
 
@@ -263,11 +263,11 @@ def test_list_stale_skips_reviewed_items(tmp_path, monkeypatch, capsys):
 
     # Create config and links
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
@@ -283,7 +283,7 @@ def test_list_stale_skips_reviewed_items(tmp_path, monkeypatch, capsys):
     )
 
     # Run list-stale - should skip the reviewed item
-    from docsync.cli import cmd_list_stale
+    from menard.cli import cmd_list_stale
 
     result = cmd_list_stale(
         Namespace(format="json", show_diff=False, diff_lines=30, changed_files=None)
@@ -329,16 +329,16 @@ def test_list_stale_skips_ignored_links(tmp_path, monkeypatch, capsys):
 
     # Create config and links with ignore=true
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/generated.py"\ndocs = ["docs/api.md#Generated"]\nignore = true\n'
     )
 
     # Run list-stale - should skip the ignored link
-    from docsync.cli import cmd_list_stale
+    from menard.cli import cmd_list_stale
 
     exit_code = cmd_list_stale(
         Namespace(format="json", show_diff=False, diff_lines=30, changed_files=None)
@@ -394,11 +394,11 @@ def test_check_skips_reviewed_items(tmp_path, monkeypatch, capsys):
 
     # Create config and links
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\nmode = "block"\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\nmode = "block"\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
@@ -417,7 +417,7 @@ def test_check_skips_reviewed_items(tmp_path, monkeypatch, capsys):
     subprocess.run(["git", "add", "src/auth.py"], cwd=tmp_path, capture_output=True)
 
     # Run check - should skip the reviewed item
-    from docsync.cli import cmd_check
+    from menard.cli import cmd_check
 
     result = cmd_check(
         Namespace(
@@ -469,16 +469,16 @@ def test_cmd_fix_interactive_mark_reviewed(tmp_path, monkeypatch, capsys):
 
     # Create config and links
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
     # Mock stdin to simulate user pressing 'm' (mark reviewed) and TTY check
-    from docsync.cli import cmd_fix_interactive
+    from menard.cli import cmd_fix_interactive
 
     with patch("builtins.input", return_value="m"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
@@ -523,16 +523,16 @@ def test_cmd_fix_interactive_skip(tmp_path, monkeypatch, capsys):
 
     # Create config and links
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
     # Mock stdin to simulate user pressing 's' (skip) and TTY check
-    from docsync.cli import cmd_fix_interactive
+    from menard.cli import cmd_fix_interactive
 
     with patch("builtins.input", return_value="s"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
@@ -575,16 +575,16 @@ def test_cmd_fix_interactive_ignore(tmp_path, monkeypatch):
 
     # Create config and links
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
     # Mock stdin to simulate user pressing 'i' (ignore) and TTY check
-    from docsync.cli import cmd_fix_interactive
+    from menard.cli import cmd_fix_interactive
 
     with patch("builtins.input", return_value="i"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
@@ -638,11 +638,11 @@ def test_list_stale_partial_review_multi_doc_link(tmp_path, monkeypatch, capsys)
 
     # Create config and links (one code file to TWO doc sections)
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text(
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text(
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Login", "docs/api.md#Logout"]\n'
     )
 
@@ -658,7 +658,7 @@ def test_list_stale_partial_review_multi_doc_link(tmp_path, monkeypatch, capsys)
     )
 
     # Run list-stale - should still show Logout as stale but skip Login
-    from docsync.cli import cmd_list_stale
+    from menard.cli import cmd_list_stale
 
     cmd_list_stale(Namespace(format="json", show_diff=False, diff_lines=30, changed_files=None))
 
@@ -685,7 +685,7 @@ def test_cmd_fix_mark_reviewed_validates_file_exists(tmp_path, monkeypatch, caps
     )
     subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
 
-    from docsync.cli import cmd_fix_mark_reviewed
+    from menard.cli import cmd_fix_mark_reviewed
 
     result = cmd_fix_mark_reviewed(
         Namespace(
@@ -720,7 +720,7 @@ def test_cmd_fix_mark_reviewed_normalizes_paths(tmp_path, monkeypatch):
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
     subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
 
-    from docsync.cli import cmd_fix_mark_reviewed
+    from menard.cli import cmd_fix_mark_reviewed
 
     # Use ./prefix in paths
     result = cmd_fix_mark_reviewed(
@@ -747,16 +747,16 @@ def test_cmd_fix_interactive_fails_on_non_tty(tmp_path, monkeypatch, capsys):
 
     # Create config
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text("")
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text("")
 
     # Mock stdin.isatty() to return False using monkeypatch
     import sys
 
-    from docsync.cli import cmd_fix_interactive
+    from menard.cli import cmd_fix_interactive
 
     monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
     result = cmd_fix_interactive(Namespace())

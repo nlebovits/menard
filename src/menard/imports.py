@@ -15,10 +15,10 @@ def build_import_graph(
     source_roots defaults to [repo_root / "src", repo_root] if not provided.
     Only resolves imports to files that actually exist in the project.
 
-    Uses SHA-based caching in .docsync/ directory for performance.
+    Uses SHA-based caching in .menard/ directory for performance.
     """
     # Try to load from cache
-    from docsync.cache import load_import_graph_cache, save_import_graph_cache
+    from menard.cache import load_import_graph_cache, save_import_graph_cache
 
     cached_graph = load_import_graph_cache(repo_root)
     if cached_graph is not None:

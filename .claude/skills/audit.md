@@ -1,18 +1,18 @@
-# docsync audit
+# menard audit
 
-Analyze documentation for docsync trackability and suggest improvements.
+Analyze documentation for menard trackability and suggest improvements.
 
 ## When to Use
 
 Use this skill when:
-- Onboarding a new repo to docsync (`docsync init` → `docsync audit`)
+- Onboarding a new repo to menard (`menard init` → `menard audit`)
 - Periodic health checks on documentation coverage
 - After adding new docs that need links.toml entries
 - When docs feel "messy" and need restructuring for trackability
 
 ## What This Skill Does
 
-Score docs on **deterministic verifiability** — how well docsync can track and enforce them.
+Score docs on **deterministic verifiability** — how well menard can track and enforce them.
 
 ### Scoring Signals
 
@@ -38,17 +38,17 @@ Score docs on **deterministic verifiability** — how well docsync can track and
 ### Step 1: Gather Context
 
 ```bash
-# Check current docsync configuration
-cat pyproject.toml | grep -A 20 "\[tool.docsync\]"
+# Check current menard configuration
+cat pyproject.toml | grep -A 20 "\[tool.menard\]"
 
 # See existing links
-cat .docsync/links.toml
+cat .menard/links.toml
 
 # See existing protections
-cat .docsync/donttouch 2>/dev/null || echo "No donttouch file"
+cat .menard/donttouch 2>/dev/null || echo "No donttouch file"
 
 # Run coverage to see current state
-docsync coverage
+menard coverage
 ```
 
 ### Step 2: Scan Documentation
@@ -91,7 +91,7 @@ Output per-file, per-section scores with specific issues:
 Extract file path mentions from prose and suggest entries:
 
 ```toml
-# SUGGESTED: Add to .docsync/links.toml
+# SUGGESTED: Add to .menard/links.toml
 
 [[link]]
 code = "src/auth.py"
@@ -107,7 +107,7 @@ docs = ["docs/api.md#Data Pipeline"]
 Detect protected content patterns:
 
 ```
-# SUGGESTED: Add to .docsync/donttouch
+# SUGGESTED: Add to .menard/donttouch
 
 # License section should not change
 README.md#License
@@ -158,22 +158,22 @@ Proposed:
 
 ### Human-readable (default)
 ```bash
-docsync audit
+menard audit
 ```
 
 ### JSON (for programmatic use)
 ```bash
-docsync audit --format json
+menard audit --format json
 ```
 
 ### Suggestions only
 ```bash
-docsync audit --suggest
+menard audit --suggest
 ```
 
 ### Apply safe changes
 ```bash
-docsync audit --apply
+menard audit --apply
 ```
 
 ## Key Principles
@@ -186,13 +186,13 @@ docsync audit --apply
 
 4. **Two-audience awareness** — If repo has both `docs/` and `CLAUDE.md`/`context/`, score them differently. AI-oriented docs should be denser, more structured.
 
-## Integration with docsync init
+## Integration with menard init
 
 Ideal onboarding flow:
 ```bash
-docsync init                    # Creates config, .docsync/ directory
-docsync audit --suggest         # "Here's what your docs look like"
-docsync audit --apply           # Auto-generate links.toml + donttouch
-docsync bootstrap               # Fill in convention-based links
-docsync install-hook            # Start enforcing
+menard init                    # Creates config, .menard/ directory
+menard audit --suggest         # "Here's what your docs look like"
+menard audit --apply           # Auto-generate links.toml + donttouch
+menard bootstrap               # Fill in convention-based links
+menard install-hook            # Start enforcing
 ```

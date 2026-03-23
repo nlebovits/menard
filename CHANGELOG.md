@@ -2,10 +2,10 @@
 
 ### BREAKING CHANGES
 
-- **Centralized TOML Links**: Replaced inline comments (`# docsync: docs/api.md`) with centralized `.docsync/links.toml` file
+- **Centralized TOML Links**: Replaced inline comments (`# menard: docs/api.md`) with centralized `.menard/links.toml` file
   - All code↔doc relationships now defined in one place
   - No more scattered inline comments in source files
-  - Migration: Use `docsync bootstrap --apply` to auto-generate links from conventions
+  - Migration: Use `menard bootstrap --apply` to auto-generate links from conventions
 
 ### Features
 
@@ -25,7 +25,7 @@
   - Import graph: Suggest transitive links
   - Warnings for human-facing docs (tutorials, guides) that need manual review
 
-- **Link Validation**: New `docsync validate-links` command
+- **Link Validation**: New `menard validate-links` command
   - Checks that all referenced files exist
   - Validates section headings exist in target docs
   - Fuzzy matching suggestions for renamed sections
@@ -56,12 +56,12 @@
 
 - **Removed**:
   - All inline comment parsing logic
-  - `add-link` command (edit `.docsync/links.toml` directly)
+  - `add-link` command (edit `.menard/links.toml` directly)
   - Symmetry enforcement (structurally enforced by TOML)
 
 ### Developer Experience
 
-- **Deterministic + Probabilistic Design**: docsync provides deterministic staleness detection for AI agents to make scoped, probabilistic updates
+- **Deterministic + Probabilistic Design**: menard provides deterministic staleness detection for AI agents to make scoped, probabilistic updates
   - Layer 1: Exact staleness detection (file + section + line ranges)
   - Layer 2: AI uses coordinates for targeted doc updates
   - Result: 44-line update task instead of "update the docs somewhere"
@@ -102,11 +102,11 @@
 ### Notes
 
 - **No Migration Tool**: Due to architectural differences, no automatic migration from inline comments
-  - Recommended: Run `docsync bootstrap --apply` in existing repos
-  - Manual: Extract inline comments to `.docsync/links.toml`
+  - Recommended: Run `menard bootstrap --apply` in existing repos
+  - Manual: Extract inline comments to `.menard/links.toml`
 
-- **Version Control**: `.docsync/links.toml` MUST be committed (source of truth)
-  - `.docsync/cache/` should remain in `.gitignore`
+- **Version Control**: `.menard/links.toml` MUST be committed (source of truth)
+  - `.menard/cache/` should remain in `.gitignore`
 
 ---
 
@@ -114,7 +114,7 @@
 
 ### Features
 
-- **Initial Release**: docsync with agent-native UX and caching
+- **Initial Release**: menard with agent-native UX and caching
   - Bidirectional linking between code and documentation
   - Import-aware staleness detection
   - Pre-commit enforcement

@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docsync.config import load_config
+from menard.config import load_config
 
 
 def test_load_config_missing_file(tmp_path: Path):
@@ -12,7 +12,7 @@ def test_load_config_missing_file(tmp_path: Path):
 
 
 def test_load_config_missing_section(tmp_path: Path):
-    """Test that missing [tool.docsync] section returns None."""
+    """Test that missing [tool.menard] section returns None."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text("""
 [project]
@@ -27,7 +27,7 @@ def test_load_config_partial_section(tmp_path: Path):
     """Test that partial config uses defaults for missing keys."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 """)
@@ -43,7 +43,7 @@ def test_load_config_full_section(tmp_path: Path):
     """Test loading a complete config section."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 transitive_depth = 2
 enforce_symmetry = false
@@ -65,7 +65,7 @@ def test_load_config_ignores_unknown_keys(tmp_path: Path):
     """Test that unknown keys in config are ignored (forward compatibility)."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "block"
 unknown_future_key = "some value"
 another_unknown = 123

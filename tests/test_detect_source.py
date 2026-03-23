@@ -1,9 +1,9 @@
-"""Tests for source directory detection in docsync init."""
+"""Tests for source directory detection in menard init."""
 
 from argparse import Namespace
 from pathlib import Path
 
-from docsync.cli import (
+from menard.cli import (
     EXCLUDED_DIRS,
     _is_valid_package_pattern,
     cmd_init,
@@ -372,7 +372,7 @@ packages = ["src/existingpkg"]
         assert result == 0
 
         content = pyproject.read_text()
-        assert "[tool.docsync]" in content
+        assert "[tool.menard]" in content
         assert 'require_links = ["src/existingpkg/**/*.py"]' in content
 
     def test_init_detects_multiple_packages(self, tmp_path: Path, monkeypatch) -> None:

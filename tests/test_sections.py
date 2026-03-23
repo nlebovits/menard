@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from docsync.sections import (
+from menard.sections import (
     get_section_content,
     list_sections,
     parse_markdown_section,

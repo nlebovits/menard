@@ -1,6 +1,6 @@
 """Simple integration tests for hook.py to boost coverage."""
 
-from docsync.hook import run_hook
+from menard.hook import run_hook
 
 
 def test_hook_no_config(tmp_path):
@@ -18,7 +18,7 @@ def test_hook_no_config(tmp_path):
 def test_hook_no_staged_files(tmp_path):
     """Test hook with no staged files."""
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
     result = run_hook(tmp_path, staged_files=[])
     assert result.passed
@@ -36,15 +36,15 @@ def test_hook_with_valid_links(tmp_path):
     (docs / "doc.md").write_text("# Doc")
 
     # Create links
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text('[[link]]\ncode = "src/code.py"\ndocs = ["docs/doc.md"]\n')
 
     # Create config
     config = tmp_path / "pyproject.toml"
     config.write_text(
-        '[tool.docsync]\nrequire_links = ["src/**/*.py"]\ndoc_paths = ["docs/**/*.md"]\n'
+        '[tool.menard]\nrequire_links = ["src/**/*.py"]\ndoc_paths = ["docs/**/*.md"]\n'
     )
 
     # Initialize git repo to avoid staleness check errors
@@ -79,13 +79,13 @@ def test_hook_warn_mode(tmp_path):
     docs.mkdir()
     (docs / "doc.md").write_text("# Doc")
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text('[[link]]\ncode = "src/code.py"\ndocs = ["docs/doc.md"]\n')
 
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\nmode = "warn"\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\nmode = "warn"\n')
 
     # In warn mode, should pass even with issues
     result = run_hook(tmp_path, staged_files=["src/code.py"])

@@ -1,10 +1,10 @@
 # Agent Skills
 
-docsync provides Claude Code skills for intelligent documentation management.
+menard provides Claude Code skills for intelligent documentation management.
 
 ## Audit Skill
 
-The audit skill analyzes documentation for trackability and suggests improvements. It scores each doc file and section on **deterministic verifiability** — how well docsync can track and verify the content.
+The audit skill analyzes documentation for trackability and suggests improvements. It scores each doc file and section on **deterministic verifiability** — how well menard can track and verify the content.
 
 Available at `.claude/skills/audit.md`.
 
@@ -45,7 +45,7 @@ Each doc section receives a score (1-10):
 
 **Invoke explicitly:**
 ```
-> Run the docsync audit skill on all documentation
+> Run the menard audit skill on all documentation
 ```
 
 **Invoke contextually:**

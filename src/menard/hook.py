@@ -5,12 +5,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from docsync.config import load_config
-from docsync.donttouch import check_protections, load_donttouch
-from docsync.graph import build_docsync_graph, get_linked_docs
-from docsync.imports import build_import_graph
-from docsync.staleness import is_doc_stale
-from docsync.toml_links import LinkTarget
+from menard.config import load_config
+from menard.donttouch import check_protections, load_donttouch
+from menard.graph import build_menard_graph, get_linked_docs
+from menard.imports import build_import_graph
+from menard.staleness import is_doc_stale
+from menard.toml_links import LinkTarget
 
 
 @dataclass
@@ -39,7 +39,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             passed=True,
             stale_docs=[],
             missing_links=[],
-            message="docsync: no staged files",
+            message="menard: no staged files",
         )
 
     # Check 1: Protected content (fast fail)
@@ -78,7 +78,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
                         message_lines.append(f'  • {v.file}: "{literal_preview}"')
 
             message_lines.append("\nTo bypass: git commit --no-verify")
-            message_lines.append("To modify rules: edit .docsync/donttouch")
+            message_lines.append("To modify rules: edit .menard/donttouch")
 
             return HookResult(
                 passed=False,
@@ -94,17 +94,17 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             passed=True,
             stale_docs=[],
             missing_links=[],
-            message="docsync: not configured (skipping checks)",
+            message="menard: not configured (skipping checks)",
         )
 
     # Check 2: Validate links before checking staleness (issue #22)
-    from docsync.toml_links import load_links, validate_links
+    from menard.toml_links import load_links, validate_links
 
     links = load_links(repo_root)
     if links:
         link_errors = validate_links(links, repo_root)
         if link_errors:
-            message_lines = ["❌ docsync: broken links detected\n"]
+            message_lines = ["❌ menard: broken links detected\n"]
             message_lines.append("The following links reference missing files or sections:")
             for error in link_errors:
                 # Indent multi-line errors properly
@@ -113,9 +113,9 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
                 for line in error_lines[1:]:
                     message_lines.append(f"    {line}")
             message_lines.append(
-                "\nFix: Update .docsync/links.toml to remove or redirect broken links"
+                "\nFix: Update .menard/links.toml to remove or redirect broken links"
             )
-            message_lines.append("Hint: Run 'docsync validate-links' to see all broken links")
+            message_lines.append("Hint: Run 'menard validate-links' to see all broken links")
 
             return HookResult(
                 passed=False,
@@ -125,7 +125,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             )
 
     # Build graphs
-    docsync_graph = build_docsync_graph(repo_root, config)
+    menard_graph = build_menard_graph(repo_root, config)
     import_graph = {}
     if config.transitive_depth > 0:
         import_graph = build_import_graph(repo_root)
@@ -141,7 +141,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
 
         # Check if this file requires links
         requires_link = _matches_require_links(staged_file, config, repo_root)
-        has_link = staged_file in docsync_graph
+        has_link = staged_file in menard_graph
 
         if requires_link and not has_link:
             missing_links.append(staged_file)
@@ -152,7 +152,7 @@ def run_hook(repo_root: Path, staged_files: list[str] | None = None) -> HookResu
             continue
 
         # Get linked doc targets
-        doc_targets = get_linked_docs(staged_file, docsync_graph, config)
+        doc_targets = get_linked_docs(staged_file, menard_graph, config)
 
         # Get transitive imports
         transitive_imports = []
@@ -211,7 +211,7 @@ def _is_doc_file(file_path: str, config) -> bool:
     """Check if a file matches any doc_paths pattern."""
     from pathlib import PurePath
 
-    from docsync.graph import _match_pattern_parts
+    from menard.graph import _match_pattern_parts
 
     pure_path = PurePath(file_path)
 
@@ -230,7 +230,7 @@ def _is_doc_file(file_path: str, config) -> bool:
 
 def _matches_require_links(file_path: str, config, repo_root: Path) -> bool:
     """Check if a file matches any require_links pattern."""
-    from docsync.graph import _match_globs
+    from menard.graph import _match_globs
 
     file = repo_root / file_path
     return _match_globs(file, config.require_links, repo_root)
@@ -239,22 +239,22 @@ def _matches_require_links(file_path: str, config, repo_root: Path) -> bool:
 def _format_message(config, stale_docs: list[dict], missing_links: list[str], passed: bool) -> str:
     """Format the output message."""
     if not stale_docs and not missing_links:
-        return "docsync: ✓ all documentation is up to date"
+        return "menard: ✓ all documentation is up to date"
 
     lines = []
 
     # Header
     if config.mode == "warn":
-        lines.append("docsync: ⚠️  commit warning\n")
+        lines.append("menard: ⚠️  commit warning\n")
     else:
-        lines.append("docsync: ❌ commit blocked\n")
+        lines.append("menard: ❌ commit blocked\n")
 
     # Missing links
     if missing_links:
         lines.append("Files requiring documentation links:")
         for file in sorted(missing_links):
             lines.append(f"  {file}")
-        lines.append("\nAdd links in .docsync/links.toml or run 'docsync bootstrap'")
+        lines.append("\nAdd links in .menard/links.toml or run 'menard bootstrap'")
         lines.append("")
 
     # Stale docs

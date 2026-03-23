@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from docsync.toml_links import (
+from menard.toml_links import (
     Link,
     LinkTarget,
     build_graph_from_links,
@@ -43,10 +43,10 @@ def test_load_links_valid():
     """Test loading a valid links.toml file."""
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
 
-        links_file = docsync_dir / "links.toml"
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -79,10 +79,10 @@ def test_load_links_invalid_toml():
     """Test loading an invalid TOML file raises error."""
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
 
-        links_file = docsync_dir / "links.toml"
+        links_file = menard_dir / "links.toml"
         links_file.write_text("invalid toml [[[")
 
         with pytest.raises(ValueError, match="Failed to parse"):
@@ -213,10 +213,10 @@ def test_load_links_with_ignore():
     """Test loading links with ignore flag."""
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
 
-        links_file = docsync_dir / "links.toml"
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]

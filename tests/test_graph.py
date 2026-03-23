@@ -3,19 +3,19 @@
 import tempfile
 from pathlib import Path
 
-from docsync.config import DocsyncConfig
-from docsync.graph import build_docsync_graph, get_linked_docs
+from menard.config import DocsyncConfig
+from menard.graph import build_menard_graph, get_linked_docs
 
 
 def test_build_graph_from_toml():
-    """Test building graph from .docsync/links.toml."""
+    """Test building graph from .menard/links.toml."""
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
 
         # Create links.toml
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
-        links_file = docsync_dir / "links.toml"
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -29,7 +29,7 @@ docs = ["docs/models.md", "docs/api.md#User Endpoints"]
         )
 
         config = DocsyncConfig(doc_paths=["docs/**/*.md"])
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         # Check bidirectional links
         assert "docs/api.md" in graph["src/auth.py"]
@@ -48,7 +48,7 @@ def test_build_graph_empty_links():
         repo_root = Path(tmpdir)
 
         config = DocsyncConfig()
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         assert graph == {}
 
@@ -59,9 +59,9 @@ def test_get_linked_docs():
         repo_root = Path(tmpdir)
 
         # Create links
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
-        links_file = docsync_dir / "links.toml"
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -71,7 +71,7 @@ docs = ["docs/api.md", "docs/auth.md#Authentication"]
         )
 
         config = DocsyncConfig(doc_paths=["docs/**/*.md"])
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         docs = get_linked_docs("src/auth.py", graph, config)
 
@@ -86,9 +86,9 @@ def test_get_linked_docs_filters_non_docs():
         repo_root = Path(tmpdir)
 
         # Create a graph with mixed links
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
-        links_file = docsync_dir / "links.toml"
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -103,7 +103,7 @@ docs = ["src/auth.py"]
 
         # Config only considers docs/**/*.md as doc files
         config = DocsyncConfig(doc_paths=["docs/**/*.md"])
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         # For src/models/user.py, src/auth.py should NOT be included
         # (it's a code file, not a doc file)
@@ -122,9 +122,9 @@ def test_build_graph_with_glob_patterns():
         (repo_root / "src" / "models" / "post.py").write_text("# post model")
 
         # Create links with glob
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
-        links_file = docsync_dir / "links.toml"
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -134,7 +134,7 @@ docs = ["docs/models.md"]
         )
 
         config = DocsyncConfig(doc_paths=["docs/**/*.md"])
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         # Both model files should link to docs
         assert "docs/models.md" in graph["src/models/user.py"]
@@ -150,9 +150,9 @@ def test_build_graph_with_sections():
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
 
-        docsync_dir = repo_root / ".docsync"
-        docsync_dir.mkdir()
-        links_file = docsync_dir / "links.toml"
+        menard_dir = repo_root / ".menard"
+        menard_dir.mkdir()
+        links_file = menard_dir / "links.toml"
         links_file.write_text(
             """
 [[link]]
@@ -162,7 +162,7 @@ docs = ["docs/api.md#Authentication", "docs/api.md#Sessions"]
         )
 
         config = DocsyncConfig(doc_paths=["docs/**/*.md"])
-        graph = build_docsync_graph(repo_root, config)
+        graph = build_menard_graph(repo_root, config)
 
         # Check that both section-specific targets are in graph
         assert "docs/api.md#Authentication" in graph["src/auth.py"]

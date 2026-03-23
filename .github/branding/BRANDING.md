@@ -1,4 +1,4 @@
-# docsync Brand Assets
+# menard Brand Assets
 
 ## Colors
 

@@ -2,7 +2,7 @@
 
 from argparse import Namespace
 
-from docsync.cli import (
+from menard.cli import (
     cmd_affected_docs,
     cmd_bootstrap,
     cmd_check,
@@ -28,7 +28,7 @@ def test_cmd_init_idempotent(tmp_path, monkeypatch):
     """Test cmd_init is idempotent."""
     monkeypatch.chdir(tmp_path)
     pyproject = tmp_path / "pyproject.toml"
-    pyproject.write_text("[tool.docsync]\nmode = 'warn'\n")
+    pyproject.write_text("[tool.menard]\nmode = 'warn'\n")
 
     result = cmd_init(Namespace())
     assert result == 1  # Already configured
@@ -55,9 +55,9 @@ def test_cmd_validate_links_valid(tmp_path, monkeypatch):
     (docs / "doc.md").write_text("# Doc")
 
     # Create links
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text('[[link]]\ncode = "src/code.py"\ndocs = ["docs/doc.md"]\n')
 
     result = cmd_validate_links(Namespace())
@@ -69,7 +69,7 @@ def test_cmd_clear_cache(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     # Create cache
-    cache_dir = tmp_path / ".docsync" / "cache"
+    cache_dir = tmp_path / ".menard" / "cache"
     cache_dir.mkdir(parents=True)
     (cache_dir / "test.json").write_text("{}")
 
@@ -95,15 +95,15 @@ def test_cmd_coverage_basic(tmp_path, monkeypatch):
 
     # Create basic project structure
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
     src = tmp_path / "src"
     src.mkdir()
     (src / "code.py").write_text("pass")
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text("")
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text("")
 
     result = cmd_coverage(Namespace(format="text", min_coverage=None, fail_under=None))
     assert result in (0, 1)  # May fail due to low coverage, but shouldn't crash
@@ -122,11 +122,11 @@ def test_cmd_list_stale_basic(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text("")
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text("")
 
     result = cmd_list_stale(Namespace(format="text", changed_files=None))
     assert result in (0, 1)
@@ -137,15 +137,15 @@ def test_cmd_affected_docs_basic(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
     src = tmp_path / "src"
     src.mkdir()
     (src / "code.py").write_text("pass")
 
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
-    (docsync / "links.toml").write_text("")
+    menard = tmp_path / ".menard"
+    menard.mkdir()
+    (menard / "links.toml").write_text("")
 
     # files arg expects a comma-separated string, format defaults to text
     result = cmd_affected_docs(Namespace(files="src/code.py", depth=1, format="text"))
@@ -157,7 +157,7 @@ def test_cmd_bootstrap_basic(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     config = tmp_path / "pyproject.toml"
-    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+    config.write_text('[tool.menard]\nrequire_links = ["src/**/*.py"]\n')
 
     src = tmp_path / "src"
     src.mkdir()
@@ -191,7 +191,7 @@ def test_cmd_skills_lists_skills(tmp_path, monkeypatch):
     skills_dir.mkdir(parents=True)
 
     skill_file = skills_dir / "audit.md"
-    skill_file.write_text("# Audit Skill\n\nAnalyze documentation for docsync.\n")
+    skill_file.write_text("# Audit Skill\n\nAnalyze documentation for menard.\n")
 
     result = cmd_skills(Namespace(format="text"))
     assert result == 0

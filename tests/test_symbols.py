@@ -3,7 +3,7 @@
 import tempfile
 from pathlib import Path
 
-from docsync.symbols import (
+from menard.symbols import (
     SymbolDiff,
     SymbolInfo,
     diff_symbols,
@@ -204,7 +204,7 @@ def test_get_symbols_cached():
     """Test that caching works for symbol extraction."""
     with tempfile.TemporaryDirectory() as tmpdir:
         repo_root = Path(tmpdir)
-        (repo_root / ".docsync").mkdir()
+        (repo_root / ".menard").mkdir()
 
         source = "def cached_func(): pass"
 

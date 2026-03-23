@@ -1,6 +1,6 @@
 # CLI Reference
 
-Complete reference for all docsync commands.
+Complete reference for all menard commands.
 
 ## Global Options
 
@@ -12,19 +12,19 @@ All commands support these options:
 
 ### init
 
-Initialize docsync configuration in your repository.
+Initialize menard configuration in your repository.
 
 ```bash
-docsync init
+menard init
 ```
 
 **Effect:**
 
-- Adds `[tool.docsync]` to `pyproject.toml`
-- Creates `.docsync/` directory
-- Creates `.docsync/links.toml` file
+- Adds `[tool.menard]` to `pyproject.toml`
+- Creates `.menard/` directory
+- Creates `.menard/links.toml` file
 
-**When to use:** First time setting up docsync in a project.
+**When to use:** First time setting up menard in a project.
 
 ---
 
@@ -35,16 +35,16 @@ docsync init
 Auto-generate links from conventions and content analysis.
 
 ```bash
-docsync bootstrap [--apply]
+menard bootstrap [--apply]
 ```
 
 **Options:**
 
-- `--apply` - Apply proposed links to `.docsync/links.toml`
+- `--apply` - Apply proposed links to `.menard/links.toml`
 
 **Without `--apply`:** Shows proposed links for review.
 
-**With `--apply`:** Writes links to `.docsync/links.toml`.
+**With `--apply`:** Writes links to `.menard/links.toml`.
 
 **How it works:**
 
@@ -55,7 +55,7 @@ docsync bootstrap [--apply]
 **Example:**
 
 ```bash
-$ docsync bootstrap
+$ menard bootstrap
 
 Proposed 15 links:
 
@@ -67,7 +67,7 @@ Proposed 15 links:
 Review these carefully - automated links may not make sense for narrative docs.
 
 To apply these links, run:
-  docsync bootstrap --apply
+  menard bootstrap --apply
 ```
 
 **When to use:** Initial link generation or discovering missing links.
@@ -81,7 +81,7 @@ To apply these links, run:
 Validate that all link references exist.
 
 ```bash
-docsync validate-links
+menard validate-links
 ```
 
 **Checks:**
@@ -106,7 +106,7 @@ Or with errors:
     Code file 'src/missing.py' does not exist
 ```
 
-**When to use:** After editing `.docsync/links.toml`, before committing.
+**When to use:** After editing `.menard/links.toml`, before committing.
 
 ---
 
@@ -115,7 +115,7 @@ Or with errors:
 Report documentation coverage.
 
 ```bash
-docsync coverage [--format text|json]
+menard coverage [--format text|json]
 ```
 
 **Options:**
@@ -160,7 +160,7 @@ Documentation Coverage: 85.0%
 Check staged files for doc freshness (CI/pre-commit).
 
 ```bash
-docsync check [--staged-files FILES] [--format text|json] [--show-diff] [--diff-lines N]
+menard check [--staged-files FILES] [--format text|json] [--show-diff] [--diff-lines N]
 ```
 
 **Options:**
@@ -177,9 +177,9 @@ docsync check [--staged-files FILES] [--format text|json] [--show-diff] [--diff-
 **Example (text):**
 
 ```bash
-$ docsync check
+$ menard check
 
-docsync: ❌ commit blocked
+menard: ❌ commit blocked
 
 Stale documentation detected:
   docs/api.md#Authentication
@@ -220,7 +220,7 @@ Stale documentation detected:
 **With `--show-diff`:**
 
 ```bash
-$ docsync check --show-diff
+$ menard check --show-diff
 
   docs/api.md#Authentication
     Code: src/auth.py
@@ -245,7 +245,7 @@ $ docsync check --show-diff
 List ALL stale docs regardless of recent changes (audit).
 
 ```bash
-docsync list-stale [--format text|paths|json] [--show-diff] [--diff-lines N]
+menard list-stale [--format text|paths|json] [--show-diff] [--diff-lines N]
 ```
 
 **Options:**
@@ -264,7 +264,7 @@ docsync list-stale [--format text|paths|json] [--show-diff] [--diff-lines N]
 **Example (text):**
 
 ```bash
-$ docsync list-stale
+$ menard list-stale
 
 Found 2 stale documentation targets:
 
@@ -324,7 +324,7 @@ docs/models.md
 Show docs affected by code changes.
 
 ```bash
-docsync affected-docs --files FILE1,FILE2,... [--format text|json]
+menard affected-docs --files FILE1,FILE2,... [--format text|json]
 ```
 
 **Options:**
@@ -337,7 +337,7 @@ docsync affected-docs --files FILE1,FILE2,... [--format text|json]
 **Example (text):**
 
 ```bash
-$ docsync affected-docs --files src/auth.py,src/crypto.py
+$ menard affected-docs --files src/auth.py,src/crypto.py
 
 Affected documentation:
 
@@ -378,7 +378,7 @@ Affected documentation:
 Show all links for a file.
 
 ```bash
-docsync info FILE [--format text|json]
+menard info FILE [--format text|json]
 ```
 
 **Options:**
@@ -388,7 +388,7 @@ docsync info FILE [--format text|json]
 **Example (text):**
 
 ```bash
-$ docsync info src/auth.py
+$ menard info src/auth.py
 
 Links for src/auth.py:
 
@@ -428,7 +428,7 @@ Links for src/auth.py:
 List protected sections and literals.
 
 ```bash
-docsync list-protected [--format text|json]
+menard list-protected [--format text|json]
 ```
 
 **Options:**
@@ -472,7 +472,7 @@ Global literals:
 List available Claude Code skills.
 
 ```bash
-docsync skills
+menard skills
 ```
 
 **Example output:**
@@ -496,10 +496,10 @@ Available Claude Code skills:
 Clear the import graph cache.
 
 ```bash
-docsync clear-cache
+menard clear-cache
 ```
 
-**Effect:** Deletes `.docsync/cache/` directory containing import graph cache.
+**Effect:** Deletes `.menard/cache/` directory containing import graph cache.
 
 **When to use:** After major refactoring, if cache seems stale, or to reclaim disk space.
 

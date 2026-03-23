@@ -4,8 +4,8 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from docsync.config import DocsyncConfig, load_config
-from docsync.graph import build_docsync_graph
+from menard.config import DocsyncConfig, load_config
+from menard.graph import build_menard_graph
 
 
 @dataclass
@@ -35,9 +35,9 @@ def generate_coverage(repo_root: Path) -> CoverageReport:
             total_required=0,
             linked=0,
             coverage_pct=100.0,
-            markdown="⚠️  docsync not configured. Run 'docsync init' to set up.\n",
+            markdown="⚠️  menard not configured. Run 'menard init' to set up.\n",
         )
-    graph = build_docsync_graph(repo_root, config)
+    graph = build_menard_graph(repo_root, config)
 
     # Find all files that should have links (from require_links globs)
     required_files = _get_required_files(repo_root, config)
@@ -86,7 +86,7 @@ def generate_coverage(repo_root: Path) -> CoverageReport:
 
 def _get_required_files(repo_root: Path, config: DocsyncConfig) -> set[str]:
     """Get all files that should have doc links (matching require_links globs)."""
-    from docsync.graph import _match_globs
+    from menard.graph import _match_globs
 
     required = set()
     for file_path in repo_root.rglob("*"):
@@ -169,7 +169,7 @@ def _is_doc_file(file_path: str, config: DocsyncConfig) -> bool:
     """Check if a file is a doc file based on doc_paths patterns."""
     from pathlib import PurePath
 
-    from docsync.graph import _match_pattern_parts
+    from menard.graph import _match_pattern_parts
 
     pure_path = PurePath(file_path)
 
@@ -217,7 +217,7 @@ def _format_markdown(
     stale_docs: list[tuple[str, str, int, int, int]],
 ) -> str:
     """Format the coverage report as markdown."""
-    lines = ["## docsync Coverage Report\n"]
+    lines = ["## menard Coverage Report\n"]
 
     # Calculate staleness metrics
     total_links = linked

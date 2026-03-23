@@ -1,0 +1,11 @@
+
+Hope you enjoy your new logo, here are the people that
+made your beautiful logo happen :)
+font name: Renner-Thin
+font link: http://indestructibletype.com/BuyRenner.html
+font author: indestructible type*
+font author site: http://indestructibletype.com/Home.html
+
+
+{"bg":"#3F1CA2","icon":"#DF98E2","font":"#FFFFFF","slogan":"#ffffff"}
+      

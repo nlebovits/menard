@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from docsync.sections import parse_markdown_section
-from docsync.toml_links import LinkTarget
+from menard.sections import parse_markdown_section
+from menard.toml_links import LinkTarget
 
 logger = logging.getLogger(__name__)
 
@@ -578,7 +578,7 @@ def check_staleness_enriched(
     # Get symbol changes (AST diff)
     if doc_commit and most_recent_code_file.endswith(".py"):
         try:
-            from docsync.symbols import get_symbol_diff_cached
+            from menard.symbols import get_symbol_diff_cached
 
             symbol_diff = get_symbol_diff_cached(
                 repo_root, most_recent_code_file, doc_commit, "HEAD"

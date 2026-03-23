@@ -6,8 +6,8 @@ from argparse import Namespace
 
 import pytest
 
-from docsync.cli import cmd_check, cmd_list_stale
-from docsync.toml_links import Link, LinkTarget, load_links
+from menard.cli import cmd_check, cmd_list_stale
+from menard.toml_links import Link, LinkTarget, load_links
 
 
 @pytest.fixture
@@ -31,10 +31,10 @@ def git_repo(tmp_path):
 
 def test_load_links_with_auto_generated(tmp_path):
     """Test that load_links correctly parses auto_generated flag."""
-    docsync = tmp_path / ".docsync"
-    docsync.mkdir()
+    menard = tmp_path / ".menard"
+    menard.mkdir()
 
-    links_file = docsync / "links.toml"
+    links_file = menard / "links.toml"
     links_file.write_text("""
 [[link]]
 code = "src/code.py"
@@ -62,7 +62,7 @@ def test_auto_generated_link_skips_staleness_check(git_repo, monkeypatch):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -79,9 +79,9 @@ doc_paths = ["docs/**/*.md"]
     doc_file.write_text("# Documentation")
 
     # Create links with auto_generated flag
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/code.py"
@@ -118,7 +118,7 @@ def test_auto_generated_count_in_json_output(git_repo, monkeypatch, capsys):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -137,9 +137,9 @@ doc_paths = ["docs/**/*.md"]
     (docs / "manual.md").write_text("# Manual")
 
     # Create links - one auto_generated, one not
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/auto.py"
@@ -186,7 +186,7 @@ def test_auto_generated_count_in_text_output(git_repo, monkeypatch, capsys):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -203,9 +203,9 @@ doc_paths = ["docs/**/*.md"]
     doc_file.write_text("# Documentation")
 
     # Create links with auto_generated flag
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/code.py"
@@ -244,7 +244,7 @@ def test_list_stale_skips_auto_generated(git_repo, monkeypatch, capsys):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -259,9 +259,9 @@ doc_paths = ["docs/**/*.md"]
     (docs / "doc.md").write_text("# Documentation")
 
     # Create links with auto_generated flag
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/code.py"
@@ -301,7 +301,7 @@ auto_generated = true
 
 def test_validation_still_runs_for_auto_generated(tmp_path):
     """Test that validation still checks auto-generated links."""
-    from docsync.toml_links import validate_links
+    from menard.toml_links import validate_links
 
     # Create the code file but not the doc file
     src = tmp_path / "src"
@@ -325,7 +325,7 @@ def test_multiple_links_same_code_file(git_repo, monkeypatch, capsys):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -342,9 +342,9 @@ doc_paths = ["docs/**/*.md"]
 
     # Create TWO links for the same code file
     # One is auto_generated, one is not
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/cli.py"
@@ -393,7 +393,7 @@ def test_auto_generated_with_section_links(git_repo, monkeypatch, capsys):
     # Create project structure
     config = git_repo / "pyproject.toml"
     config.write_text("""
-[tool.docsync]
+[tool.menard]
 mode = "warn"
 require_links = ["src/**/*.py"]
 doc_paths = ["docs/**/*.md"]
@@ -410,9 +410,9 @@ doc_paths = ["docs/**/*.md"]
     )
 
     # Link to section, mark as auto_generated
-    docsync = git_repo / ".docsync"
-    docsync.mkdir()
-    links = docsync / "links.toml"
+    menard = git_repo / ".menard"
+    menard.mkdir()
+    links = menard / "links.toml"
     links.write_text("""
 [[link]]
 code = "src/auth.py"

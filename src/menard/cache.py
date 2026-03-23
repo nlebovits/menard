@@ -52,8 +52,8 @@ def _get_repo_state_hash(repo_root: Path) -> str:
 
 
 def get_cache_dir(repo_root: Path) -> Path:
-    """Get or create the .docsync cache directory."""
-    cache_dir = repo_root / ".docsync"
+    """Get or create the .menard cache directory."""
+    cache_dir = repo_root / ".menard"
     cache_dir.mkdir(exist_ok=True)
     return cache_dir
 
@@ -115,7 +115,7 @@ def save_import_graph_cache(repo_root: Path, graph: dict[str, set[str]]) -> None
 
 def clear_cache(repo_root: Path) -> None:
     """Clear all caches."""
-    cache_dir = repo_root / ".docsync"
+    cache_dir = repo_root / ".menard"
     if cache_dir.exists():
         for cache_file in cache_dir.glob("*.json"):
             cache_file.unlink()

@@ -2,13 +2,13 @@
 
 from pathlib import Path, PurePath
 
-from docsync.config import DocsyncConfig
-from docsync.toml_links import build_graph_from_links, load_links
+from menard.config import DocsyncConfig
+from menard.toml_links import build_graph_from_links, load_links
 
 
-def build_docsync_graph(repo_root: Path, config: DocsyncConfig) -> dict[str, set[str]]:
+def build_menard_graph(repo_root: Path, config: DocsyncConfig) -> dict[str, set[str]]:
     """
-    Build bidirectional graph from .docsync/links.toml.
+    Build bidirectional graph from .menard/links.toml.
     Returns dict mapping file paths to sets of linked files.
 
     Graph nodes include:

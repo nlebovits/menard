@@ -3,18 +3,18 @@
 import os
 import subprocess
 
-from docsync.donttouch import Violation, check_protections, load_donttouch
+from menard.donttouch import Violation, check_protections, load_donttouch
 
 
 def test_load_donttouch_missing_file(tmp_path):
-    """Should return None if .docsync/donttouch doesn't exist."""
+    """Should return None if .menard/donttouch doesn't exist."""
     result = load_donttouch(tmp_path)
     assert result is None
 
 
 def test_load_donttouch_file_patterns(tmp_path):
     """Should parse file patterns."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text("LICENSE\n*.lock\n")
 
@@ -26,7 +26,7 @@ def test_load_donttouch_file_patterns(tmp_path):
 
 def test_load_donttouch_section_protection(tmp_path):
     """Should parse section protections."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text("README.md#License\nREADME.md#Contributing\n")
 
@@ -39,7 +39,7 @@ def test_load_donttouch_section_protection(tmp_path):
 
 def test_load_donttouch_scoped_literals(tmp_path):
     """Should parse file-scoped literals."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('pyproject.toml: "Apache-2.0"\n')
 
@@ -51,7 +51,7 @@ def test_load_donttouch_scoped_literals(tmp_path):
 
 def test_load_donttouch_global_literals(tmp_path):
     """Should parse global literals."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('"Apache 2.0 - see LICENSE for details"\n')
 
@@ -62,7 +62,7 @@ def test_load_donttouch_global_literals(tmp_path):
 
 def test_check_file_protection(tmp_path):
     """Should detect protected file modifications."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text("LICENSE\n*.lock\n")
 
@@ -107,7 +107,7 @@ def test_check_section_protection(tmp_path):
     subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True, capture_output=True)
 
     # Create protection rule
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text("README.md#License\n")
 
@@ -152,7 +152,7 @@ def test_check_scoped_literal_protection(tmp_path):
     subprocess.run(["git", "add", "pyproject.toml"], cwd=tmp_path, check=True, capture_output=True)
 
     # Create protection rule
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('pyproject.toml: "Apache-2.0"\n')
 
@@ -196,7 +196,7 @@ def test_check_global_literal_protection(tmp_path):
     subprocess.run(["git", "add", "README.md"], cwd=tmp_path, check=True, capture_output=True)
 
     # Create protection rule
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('"Apache 2.0 - see LICENSE for details"\n')
 
@@ -234,7 +234,7 @@ def test_violation_to_dict():
 
 def test_whitespace_normalization(tmp_path):
     """Should normalize whitespace in literal comparison."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('README.md: "Apache 2.0 License"\n')
 
@@ -274,7 +274,7 @@ def test_whitespace_normalization(tmp_path):
 
 def test_path_traversal_rejection(tmp_path, capsys):
     """Should reject path traversal attempts."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text("../../etc/passwd\n../../../secrets\n/etc/shadow\n")
 
@@ -290,7 +290,7 @@ def test_path_traversal_rejection(tmp_path, capsys):
 
 def test_line_length_limit(tmp_path, capsys):
     """Should reject lines exceeding MAX_LINE_LENGTH."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
 
     # Create a line that's too long
@@ -309,7 +309,7 @@ def test_line_length_limit(tmp_path, capsys):
 
 def test_parse_error_handling(tmp_path, capsys):
     """Should handle file read errors gracefully."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
 
     # Create file with invalid UTF-8
@@ -325,7 +325,7 @@ def test_parse_error_handling(tmp_path, capsys):
 
 def test_empty_literal_rejection(tmp_path):
     """Should reject empty literals."""
-    donttouch = tmp_path / ".docsync" / "donttouch"
+    donttouch = tmp_path / ".menard" / "donttouch"
     donttouch.parent.mkdir(parents=True)
     donttouch.write_text('""')
 

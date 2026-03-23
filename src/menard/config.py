@@ -7,7 +7,7 @@ from pathlib import Path
 
 @dataclass
 class DocsyncConfig:
-    """Configuration for docsync behavior."""
+    """Configuration for menard behavior."""
 
     mode: str = "block"
     transitive_depth: int = 1
@@ -32,20 +32,20 @@ def load_config(repo_root: Path) -> DocsyncConfig | None:
         # If we can't parse the file, not configured
         return None
 
-    # Extract [tool.docsync] section
+    # Extract [tool.menard] section
     tool_section = data.get("tool", {})
-    docsync_section = tool_section.get("docsync", {})
+    menard_section = tool_section.get("menard", {})
 
     # If section is missing, not configured
-    if not docsync_section:
+    if not menard_section:
         return None
 
     # Build config from section, using defaults for missing keys
     return DocsyncConfig(
-        mode=docsync_section.get("mode", "block"),
-        transitive_depth=docsync_section.get("transitive_depth", 1),
-        enforce_symmetry=docsync_section.get("enforce_symmetry", True),
-        require_links=docsync_section.get("require_links", []),
-        exempt=docsync_section.get("exempt", []),
-        doc_paths=docsync_section.get("doc_paths", ["docs/**/*.md", "README.md"]),
+        mode=menard_section.get("mode", "block"),
+        transitive_depth=menard_section.get("transitive_depth", 1),
+        enforce_symmetry=menard_section.get("enforce_symmetry", True),
+        require_links=menard_section.get("require_links", []),
+        exempt=menard_section.get("exempt", []),
+        doc_paths=menard_section.get("doc_paths", ["docs/**/*.md", "README.md"]),
     )

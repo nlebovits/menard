@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docsync.imports import build_import_graph, get_dependents
+from menard.imports import build_import_graph, get_dependents
 
 
 def test_build_import_graph_simple(tmp_path: Path):

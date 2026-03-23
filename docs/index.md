@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="img/favicon.png" alt="docsync logo" width="200">
+  <img src="assets/menard-logo/profile.png" alt="menard logo" width="200">
 </p>
 
-docsync is a pre-commit hook and CLI tool that deterministically flags when code changes should trigger documentation updates. It outputs agent-friendly JSON with targeted information about what changed and which doc sections need review.
+**menard** is a pre-commit hook and CLI tool that deterministically flags when code changes should trigger documentation updates. It outputs agent-friendly JSON with targeted information about what changed and which doc sections need review.
 
-When working fast with tools like Claude, docs drift quickly. Agents excel at changing code but struggle to understand how code changes should trigger doc updates. docsync addresses this with deterministic checks.
+When working fast with tools like Claude, docs drift quickly. Agents excel at changing code but struggle to understand how code changes should trigger doc updates. menard addresses this with deterministic checks.
 
 ## Three Core Use Cases
 
@@ -17,7 +17,7 @@ git commit -m "refactor auth"
 # ❌ Blocked: docs/api.md#Authentication unchanged since src/auth.py changed
 ```
 
-Define code→doc relationships in `.docsync/links.toml`, then docsync uses git diff to detect when docs need updates. Works at section-level precision—changing one part of a doc doesn't clear staleness for unrelated sections.
+Define code→doc relationships in `.menard/links.toml`, then menard uses git diff to detect when docs need updates. Works at section-level precision—changing one part of a doc doesn't clear staleness for unrelated sections.
 
 [Configuration →](configuration.md)
 
@@ -29,7 +29,7 @@ Prevent accidental changes to licenses, brand assets, and policies:
 git commit -m "update requirements"
 # ⚠️  Warning: Protected literal changed
 #   "Python 3.11+" → "Python 3.10+"
-#   This is protected in .docsync/donttouch
+#   This is protected in .menard/donttouch
 ```
 
 Protected sections are never marked stale, even if linked code changes. Protected literals trigger warnings when modified.
@@ -52,33 +52,33 @@ The audit analyzes structure (tables, code blocks, headings), file references, s
 
 ```bash
 # Install
-uv pip install git+https://github.com/nlebovits/docsync.git
+pip install menard  # or: uv add menard
 
 # Initialize
-docsync init
+menard init
 
 # Audit docs for trackability (in Claude Code)
 > Audit my documentation and apply the suggestions
 
 # Auto-generate convention-based links
-docsync bootstrap --apply
+menard bootstrap --apply
 
 # Mark auto-generated docs (e.g., from mkdocs-click) to skip staleness
-# Edit .docsync/links.toml and add: auto_generated = true
+# Edit .menard/links.toml and add: auto_generated = true
 
 # Validate and check coverage
-docsync validate-links
-docsync coverage
+menard validate-links
+menard coverage
 
 # Check for stale docs (JSON output for agents)
-docsync list-stale --format json
+menard list-stale --format json
 
 # Fix stale docs interactively
-docsync fix
+menard fix
 
 # Or use primitives for agent automation
-docsync fix-mark-reviewed --code src/auth.py --doc docs/api.md#Auth
-docsync fix-ignore --code src/auth.py --doc docs/api.md#Auth
+menard fix-mark-reviewed --code src/auth.py --doc docs/api.md#Auth
+menard fix-ignore --code src/auth.py --doc docs/api.md#Auth
 
 # Set up pre-commit hook
 pre-commit install

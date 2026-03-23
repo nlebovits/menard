@@ -1,4 +1,4 @@
-"""Reviewed state storage for docsync fix command."""
+"""Reviewed state storage for menard fix command."""
 
 import json
 import logging
@@ -24,7 +24,7 @@ class Review:
 
 def _get_reviews_path(repo_root: Path) -> Path:
     """Get path to reviewed.json file."""
-    return repo_root / ".docsync" / "reviewed.json"
+    return repo_root / ".menard" / "reviewed.json"
 
 
 def normalize_path(path: str) -> str:
@@ -41,7 +41,7 @@ def normalize_path(path: str) -> str:
 
 
 def load_reviews(repo_root: Path) -> list[Review]:
-    """Load reviews from .docsync/reviewed.json.
+    """Load reviews from .menard/reviewed.json.
 
     Returns empty list if file is missing or malformed.
     Logs warnings for malformed entries but continues loading valid ones.
@@ -68,10 +68,10 @@ def load_reviews(repo_root: Path) -> list[Review]:
 
 
 def save_review(repo_root: Path, review: Review) -> None:
-    """Save a review to .docsync/reviewed.json, replacing any existing review for same code+doc."""
+    """Save a review to .menard/reviewed.json, replacing any existing review for same code+doc."""
     reviews_path = _get_reviews_path(repo_root)
 
-    # Ensure .docsync directory exists
+    # Ensure .menard directory exists
     reviews_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Load existing reviews

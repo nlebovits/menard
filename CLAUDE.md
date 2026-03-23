@@ -1,4 +1,4 @@
-# Claude Code Instructions for docsync
+# Claude Code Instructions for menard
 
 ## Package Management
 
@@ -23,14 +23,14 @@ uv run ruff format . # Format
 ### File Structure
 
 ```
-.docsync/
+.menard/
 ├── links.toml          # Code↔doc relationships (COMMIT)
 └── cache/              # Import graph cache (IGNORE)
 
-pyproject.toml          # [tool.docsync] config
+pyproject.toml          # [tool.menard] config
 ```
 
-Add to `.gitignore`: `.docsync/cache/`
+Add to `.gitignore`: `.menard/cache/`
 
 ### Core Modules
 
@@ -52,7 +52,7 @@ Add to `.gitignore`: `.docsync/cache/`
 
 - **Agent-native**: JSON output, deterministic checks, scoped tasks
 - **Section-level precision**: Link to `docs/api.md#Authentication`, not whole files
-- **Centralized linking**: All relationships in `.docsync/links.toml`
+- **Centralized linking**: All relationships in `.menard/links.toml`
 - **Git-based staleness**: Use `git diff` to detect stale docs
 - **Bidirectional graph**: Fast lookups (code→docs, docs→code)
 
@@ -81,4 +81,4 @@ def is_doc_stale(code_file, doc_target):
 # Therefore: docs for src/auth.py may be stale
 ```
 
-Built via AST parsing. Cached in `.docsync/cache/imports_<sha>.json` (SHA-based invalidation).
+Built via AST parsing. Cached in `.menard/cache/imports_<sha>.json` (SHA-based invalidation).

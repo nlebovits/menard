@@ -169,7 +169,7 @@ def _get_content_hash(content: str) -> str:
 
 def _get_symbols_cache_path(repo_root: Path) -> Path:
     """Get the path to the symbols cache file."""
-    cache_dir = repo_root / ".docsync"
+    cache_dir = repo_root / ".menard"
     cache_dir.mkdir(exist_ok=True)
     return cache_dir / "symbols_cache.json"
 

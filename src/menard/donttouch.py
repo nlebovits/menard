@@ -14,7 +14,7 @@ MAX_LINE_LENGTH = 10_000  # 10KB per line to prevent DoS
 
 @dataclass
 class ProtectionRules:
-    """Parsed protection rules from .docsync/donttouch file."""
+    """Parsed protection rules from .menard/donttouch file."""
 
     file_patterns: pathspec.PathSpec  # Files/directories protected (gitignore-style)
     file_pattern_strings: list[str]  # Original pattern strings for display
@@ -45,11 +45,11 @@ class Violation:
 
 def load_donttouch(repo_root: Path) -> ProtectionRules | None:
     """
-    Load and parse .docsync/donttouch file.
+    Load and parse .menard/donttouch file.
     Returns None if file doesn't exist.
     Prints warnings to stderr if file has errors.
     """
-    donttouch_file = repo_root / ".docsync" / "donttouch"
+    donttouch_file = repo_root / ".menard" / "donttouch"
     if not donttouch_file.exists():
         return None
 
@@ -58,15 +58,15 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
         content = donttouch_file.read_text(encoding="utf-8")
     except UnicodeDecodeError as e:
         print(
-            f"⚠️  docsync: {donttouch_file} has invalid UTF-8 encoding: {e}",
+            f"⚠️  menard: {donttouch_file} has invalid UTF-8 encoding: {e}",
             file=sys.stderr,
         )
         return None
     except PermissionError:
-        print(f"⚠️  docsync: cannot read {donttouch_file}: permission denied", file=sys.stderr)
+        print(f"⚠️  menard: cannot read {donttouch_file}: permission denied", file=sys.stderr)
         return None
     except OSError as e:
-        print(f"⚠️  docsync: cannot read {donttouch_file}: {e}", file=sys.stderr)
+        print(f"⚠️  menard: cannot read {donttouch_file}: {e}", file=sys.stderr)
         return None
 
     file_patterns = []
@@ -81,7 +81,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
         # Security: Check line length to prevent DoS
         if len(line) > MAX_LINE_LENGTH:
             print(
-                f"⚠️  docsync: {donttouch_file}:{line_num} line too long "
+                f"⚠️  menard: {donttouch_file}:{line_num} line too long "
                 f"({len(line)} bytes, max {MAX_LINE_LENGTH}), skipping",
                 file=sys.stderr,
             )
@@ -103,7 +103,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                 # Security: Prevent path traversal
                 if ".." in file_path or file_path.startswith("/"):
                     print(
-                        f"⚠️  docsync: {donttouch_file}:{line_num} "
+                        f"⚠️  menard: {donttouch_file}:{line_num} "
                         f"path traversal attempt '{file_path}', skipping",
                         file=sys.stderr,
                     )
@@ -125,7 +125,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
                 # Security: Prevent path traversal
                 if ".." in file_path or file_path.startswith("/"):
                     print(
-                        f"⚠️  docsync: {donttouch_file}:{line_num} "
+                        f"⚠️  menard: {donttouch_file}:{line_num} "
                         f"path traversal attempt '{file_path}', skipping",
                         file=sys.stderr,
                     )
@@ -151,8 +151,7 @@ def load_donttouch(repo_root: Path) -> ProtectionRules | None:
         # Security: Prevent path traversal
         if ".." in line or line.startswith("/"):
             print(
-                f"⚠️  docsync: {donttouch_file}:{line_num} "
-                f"path traversal attempt '{line}', skipping",
+                f"⚠️  menard: {donttouch_file}:{line_num} path traversal attempt '{line}', skipping",
                 file=sys.stderr,
             )
             continue
@@ -205,7 +204,7 @@ def _check_file_protection(staged_files: list[str], patterns: pathspec.PathSpec)
                 Violation(
                     type="protected_file",
                     file=file,
-                    reason="File is protected by .docsync/donttouch",
+                    reason="File is protected by .menard/donttouch",
                 )
             )
     return violations
@@ -215,7 +214,7 @@ def _check_section_protection(
     repo_root: Path, staged_files: list[str], protected_sections: dict[str, list[str]]
 ) -> list[Violation]:
     """Check if protected sections were modified."""
-    from docsync.sections import parse_markdown_section
+    from menard.sections import parse_markdown_section
 
     violations = []
 
@@ -234,7 +233,7 @@ def _check_section_protection(
             if not section_range:
                 # Section doesn't exist - warn user
                 print(
-                    f"⚠️  docsync: protected section '{section_name}' not found in {file}",
+                    f"⚠️  menard: protected section '{section_name}' not found in {file}",
                     file=sys.stderr,
                 )
                 continue

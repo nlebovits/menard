@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from docsync.cache import clear_cache, load_import_graph_cache, save_import_graph_cache
+from menard.cache import clear_cache, load_import_graph_cache, save_import_graph_cache
 
 
 def test_save_and_load_cache(tmp_path: Path, monkeypatch):
@@ -53,15 +53,15 @@ def test_clear_cache_removes_files(tmp_path: Path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
     # Create cache files
-    docsync_dir = tmp_path / ".docsync"
-    docsync_dir.mkdir()
-    (docsync_dir / "import_graph.json").write_text("{}")
-    (docsync_dir / "import_graph.state").write_text("abc123")
+    menard_dir = tmp_path / ".menard"
+    menard_dir.mkdir()
+    (menard_dir / "import_graph.json").write_text("{}")
+    (menard_dir / "import_graph.state").write_text("abc123")
 
     clear_cache(tmp_path)
 
-    assert not (docsync_dir / "import_graph.json").exists()
-    assert not (docsync_dir / "import_graph.state").exists()
+    assert not (menard_dir / "import_graph.json").exists()
+    assert not (menard_dir / "import_graph.state").exists()
 
 
 def test_load_cache_returns_none_when_missing(tmp_path: Path, monkeypatch):

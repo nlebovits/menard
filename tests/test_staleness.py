@@ -4,8 +4,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from docsync.staleness import is_doc_stale
-from docsync.toml_links import LinkTarget
+from menard.staleness import is_doc_stale
+from menard.toml_links import LinkTarget
 
 
 def _git_init_and_commit(repo_root: Path, files: dict[str, str], message: str):

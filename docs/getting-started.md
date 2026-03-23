@@ -3,24 +3,24 @@
 ## Installation
 
 ```bash
-uv pip install git+https://github.com/nlebovits/docsync.git
+pip install menard  # or: uv add menard
 ```
 
 ## Quick Start
 
 ```bash
 # Initialize
-docsync init
+menard init
 
 # Audit docs for trackability (in Claude Code)
 > Audit my documentation and apply the suggestions
 
 # Auto-generate convention-based links
-docsync bootstrap --apply
+menard bootstrap --apply
 
 # Validate and check coverage
-docsync validate-links
-docsync coverage
+menard validate-links
+menard coverage
 ```
 
 ## Pre-Commit Setup
@@ -31,9 +31,9 @@ Add to `.pre-commit-config.yaml`:
 repos:
   - repo: local
     hooks:
-      - id: docsync-check
-        name: docsync-check
-        entry: uv run docsync check
+      - id: menard-check
+        name: menard-check
+        entry: uv run menard check
         language: system
         pass_filenames: false
         always_run: true
@@ -54,28 +54,28 @@ git commit -m "refactor auth"
 
 ## Real-World Example
 
-This walkthrough shows the complete docsync onboarding workflow from an actual session onboarding `portolan-cli`.
+This walkthrough shows the complete menard onboarding workflow from an actual session onboarding `portolan-cli`.
 
 ### Step 1: Initialize
 
 ```bash
-$ docsync init
-✓ Created .docsync/links.toml
-✓ Added [tool.docsync] to pyproject.toml
+$ menard init
+✓ Created .menard/links.toml
+✓ Added [tool.menard] to pyproject.toml
 ```
 
 Fix the source directory if needed:
 
 ```toml
 # pyproject.toml
-[tool.docsync]
+[tool.menard]
 require_links = ["portolan_cli/**/*.py"]  # Not src/
 ```
 
 ### Step 2: Check Coverage
 
 ```bash
-$ docsync coverage
+$ menard coverage
 Documentation Coverage: 0.0%
   Total code files: 60
   Documented: 0
@@ -86,7 +86,7 @@ Documentation Coverage: 0.0%
 Identify key code→doc relationships:
 
 ```toml
-# .docsync/links.toml
+# .menard/links.toml
 
 [[link]]
 code = "portolan_cli/cli.py"
@@ -112,13 +112,13 @@ In Claude Code:
 The audit identifies:
 
 - Suggested links from file path mentions
-- Protected sections for `.docsync/donttouch`
+- Protected sections for `.menard/donttouch`
 - Restructuring recommendations
 
 ### Step 5: Add Protections
 
 ```bash
-$ cat .docsync/donttouch
+$ cat .menard/donttouch
 # License sections
 README.md#License
 docs/contributing.md#License
@@ -133,15 +133,15 @@ docs/BRANDING.md#Color Palette
 ### Step 6: Bootstrap Additional Links
 
 ```bash
-$ docsync bootstrap --apply
+$ menard bootstrap --apply
 Found 8 suggested links
-Applied all suggestions to .docsync/links.toml
+Applied all suggestions to .menard/links.toml
 ```
 
 ### Step 7: Final Coverage
 
 ```bash
-$ docsync coverage
+$ menard coverage
 Documentation Coverage: 26.7%
   Total code files: 60
   Documented: 16
@@ -155,7 +155,7 @@ Make a change to code:
 $ git add portolan_cli/cli.py
 $ git commit -m "feat: add --verbose flag"
 
-docsync: ❌ commit blocked
+menard: ❌ commit blocked
 
 Stale documentation detected:
   docs/reference/cli.md
@@ -168,5 +168,5 @@ Update docs, then commit succeeds:
 ```bash
 $ git add docs/reference/cli.md
 $ git commit -m "feat: add --verbose flag"
-✓ docsync check passed
+✓ menard check passed
 ```

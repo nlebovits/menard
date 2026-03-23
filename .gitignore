@@ -46,3 +46,6 @@ testbed/
 .docsync/*
 !.docsync/links.toml
 !.docsync/donttouch
+.menard/cache/
+.menard/*.json
+.menard/*.state

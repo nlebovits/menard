@@ -1,4 +1,4 @@
-"""Integration test for TOML-based docsync workflow."""
+"""Integration test for TOML-based menard workflow."""
 
 import subprocess
 import tempfile
@@ -39,7 +39,7 @@ def test_full_workflow_with_sections():
         # Create pyproject.toml
         (repo_root / "pyproject.toml").write_text(
             """
-[tool.docsync]
+[tool.menard]
 mode = "block"
 transitive_depth = 1
 require_links = ["src/**/*.py"]
@@ -47,9 +47,9 @@ doc_paths = ["docs/**/*.md"]
 """
         )
 
-        # Create .docsync/links.toml
-        (repo_root / ".docsync").mkdir()
-        (repo_root / ".docsync" / "links.toml").write_text(
+        # Create .menard/links.toml
+        (repo_root / ".menard").mkdir()
+        (repo_root / ".menard" / "links.toml").write_text(
             """
 [[link]]
 code = "src/auth.py"
@@ -82,7 +82,7 @@ Other docs.
 
         # Check staleness using CLI
         result = subprocess.run(
-            ["docsync", "list-stale", "--format", "json"],
+            ["menard", "list-stale", "--format", "json"],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -115,7 +115,7 @@ Other docs.
 
         # Check staleness again - should be fresh now
         result = subprocess.run(
-            ["docsync", "list-stale", "--format", "json"],
+            ["menard", "list-stale", "--format", "json"],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -132,8 +132,8 @@ def test_validate_links_command():
         repo_root = Path(tmpdir)
 
         # Create structure
-        (repo_root / ".docsync").mkdir()
-        (repo_root / ".docsync" / "links.toml").write_text(
+        (repo_root / ".menard").mkdir()
+        (repo_root / ".menard" / "links.toml").write_text(
             """
 [[link]]
 code = "src/auth.py"
@@ -149,7 +149,7 @@ docs = ["docs/api.md#MissingSection"]
 
         # Run validate-links
         result = subprocess.run(
-            ["docsync", "validate-links"],
+            ["menard", "validate-links"],
             cwd=repo_root,
             capture_output=True,
             text=True,
@@ -175,8 +175,8 @@ def test_list_stale_paths_format():
         subprocess.run(["git", "config", "user.name", "Test"], cwd=repo_root, capture_output=True)
 
         # Create structure with multiple links to same doc file
-        (repo_root / ".docsync").mkdir()
-        (repo_root / ".docsync" / "links.toml").write_text(
+        (repo_root / ".menard").mkdir()
+        (repo_root / ".menard" / "links.toml").write_text(
             """
 [[link]]
 code = "src/auth.py"
@@ -188,7 +188,7 @@ docs = ["docs/api.md#Models", "docs/other.md"]
 """
         )
 
-        (repo_root / "pyproject.toml").write_text('[tool.docsync]\nmode = "warn"')
+        (repo_root / "pyproject.toml").write_text('[tool.menard]\nmode = "warn"')
 
         (repo_root / "src").mkdir()
         (repo_root / "src" / "auth.py").write_text("def login(): pass")
@@ -216,7 +216,7 @@ Model docs.
 
         # Test --format paths
         result = subprocess.run(
-            ["docsync", "list-stale", "--format", "paths"],
+            ["menard", "list-stale", "--format", "paths"],
             cwd=repo_root,
             capture_output=True,
             text=True,
