@@ -1,8 +1,14 @@
 """Reviewed state storage for docsync fix command."""
 
 import json
+import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+
+# Standard length for short commit SHAs
+SHA_SHORT_LENGTH = 7
 
 
 @dataclass
@@ -21,28 +27,68 @@ def _get_reviews_path(repo_root: Path) -> Path:
     return repo_root / ".docsync" / "reviewed.json"
 
 
+def normalize_path(path: str) -> str:
+    """Normalize a file path for consistent comparison.
+
+    Strips leading ./ and normalizes path separators.
+    """
+    # Strip leading ./
+    if path.startswith("./"):
+        path = path[2:]
+    # Normalize path separators (for Windows compatibility)
+    path = path.replace("\\", "/")
+    return path
+
+
 def load_reviews(repo_root: Path) -> list[Review]:
-    """Load reviews from .docsync/reviewed.json. Returns empty list if missing."""
+    """Load reviews from .docsync/reviewed.json.
+
+    Returns empty list if file is missing or malformed.
+    Logs warnings for malformed entries but continues loading valid ones.
+    """
     reviews_path = _get_reviews_path(repo_root)
     if not reviews_path.exists():
         return []
 
-    data = json.loads(reviews_path.read_text())
-    return [Review(**r) for r in data.get("reviews", [])]
+    try:
+        data = json.loads(reviews_path.read_text())
+    except json.JSONDecodeError as e:
+        logger.warning("Could not parse %s: %s", reviews_path, e)
+        return []
+
+    reviews = []
+    for i, r in enumerate(data.get("reviews", [])):
+        try:
+            reviews.append(Review(**r))
+        except TypeError as e:
+            logger.warning("Skipping malformed review entry %d: %s", i, e)
+            continue
+
+    return reviews
 
 
 def save_review(repo_root: Path, review: Review) -> None:
     """Save a review to .docsync/reviewed.json, replacing any existing review for same code+doc."""
     reviews_path = _get_reviews_path(repo_root)
 
+    # Ensure .docsync directory exists
+    reviews_path.parent.mkdir(parents=True, exist_ok=True)
+
     # Load existing reviews
     existing = load_reviews(repo_root)
+
+    # Normalize paths for comparison
+    review_code = normalize_path(review.code_file)
+    review_doc = normalize_path(review.doc_target)
 
     # Remove any existing review for same code_file + doc_target
     existing = [
         r
         for r in existing
-        if not (r.code_file == review.code_file and r.doc_target == review.doc_target)
+        if not (
+            normalize_path(r.code_file) == review_code
+            and normalize_path(r.doc_target) == review_doc
+        )
     ]
 
     # Append new review
@@ -59,9 +105,18 @@ def is_review_valid(review: Review, current_commit: str) -> bool:
 
 
 def find_review(reviews: list[Review], code_file: str, doc_target: str) -> Review | None:
-    """Find a review for a specific code_file + doc_target pair."""
+    """Find a review for a specific code_file + doc_target pair.
+
+    Normalizes paths for comparison to handle ./prefix and path separator differences.
+    """
+    code_file = normalize_path(code_file)
+    doc_target = normalize_path(doc_target)
+
     for review in reviews:
-        if review.code_file == code_file and review.doc_target == doc_target:
+        if (
+            normalize_path(review.code_file) == code_file
+            and normalize_path(review.doc_target) == doc_target
+        ):
             return review
     return None
 
@@ -80,13 +135,19 @@ def clean_reviews(repo_root: Path, remove_all: bool = False) -> int:
     if not reviews_path.exists():
         return 0
 
+    # Optimization: for remove_all, just count lines and delete
+    if remove_all:
+        try:
+            data = json.loads(reviews_path.read_text())
+            count = len(data.get("reviews", []))
+        except (json.JSONDecodeError, KeyError):
+            count = 0
+        reviews_path.unlink()
+        return count
+
     reviews = load_reviews(repo_root)
     if not reviews:
         return 0
-
-    if remove_all:
-        reviews_path.unlink()
-        return len(reviews)
 
     # Keep only reviews where code file exists
     kept = [r for r in reviews if (repo_root / r.code_file).exists()]

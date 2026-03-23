@@ -477,10 +477,10 @@ def test_cmd_fix_interactive_mark_reviewed(tmp_path, monkeypatch, capsys):
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
-    # Mock stdin to simulate user pressing 'm' (mark reviewed)
+    # Mock stdin to simulate user pressing 'm' (mark reviewed) and TTY check
     from docsync.cli import cmd_fix_interactive
 
-    with patch("builtins.input", return_value="m"):
+    with patch("builtins.input", return_value="m"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
 
     assert result == 0
@@ -531,10 +531,10 @@ def test_cmd_fix_interactive_skip(tmp_path, monkeypatch, capsys):
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
-    # Mock stdin to simulate user pressing 's' (skip)
+    # Mock stdin to simulate user pressing 's' (skip) and TTY check
     from docsync.cli import cmd_fix_interactive
 
-    with patch("builtins.input", return_value="s"):
+    with patch("builtins.input", return_value="s"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
 
     assert result == 0
@@ -583,10 +583,10 @@ def test_cmd_fix_interactive_ignore(tmp_path, monkeypatch):
         '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Authentication"]\n'
     )
 
-    # Mock stdin to simulate user pressing 'i' (ignore)
+    # Mock stdin to simulate user pressing 'i' (ignore) and TTY check
     from docsync.cli import cmd_fix_interactive
 
-    with patch("builtins.input", return_value="i"):
+    with patch("builtins.input", return_value="i"), patch("sys.stdin.isatty", return_value=True):
         result = cmd_fix_interactive(Namespace())
 
     assert result == 0
@@ -595,3 +595,173 @@ def test_cmd_fix_interactive_ignore(tmp_path, monkeypatch):
     links = load_links(tmp_path)
     assert len(links) == 1
     assert links[0].ignore is True
+
+
+def test_list_stale_partial_review_multi_doc_link(tmp_path, monkeypatch, capsys):
+    """Test that reviewing one doc in a multi-doc link only skips that specific doc."""
+    monkeypatch.chdir(tmp_path)
+
+    # Create git repo
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+
+    # Create code file
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "auth.py").write_text("def login(): pass")
+
+    # Create doc file with two sections
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "api.md").write_text("# API\n\n## Login\n\nLogin docs\n\n## Logout\n\nLogout docs")
+
+    # Commit
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+    # Modify code (makes both docs stale)
+    (src / "auth.py").write_text("def login(): pass\ndef logout(): pass")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "add logout"], cwd=tmp_path, capture_output=True)
+
+    # Get current commit
+    result = subprocess.run(
+        ["git", "log", "-1", "--format=%H"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+    )
+    current_commit = result.stdout.strip()[:7]
+
+    # Create config and links (one code file to TWO doc sections)
+    config = tmp_path / "pyproject.toml"
+    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+
+    docsync = tmp_path / ".docsync"
+    docsync.mkdir()
+    (docsync / "links.toml").write_text(
+        '[[link]]\ncode = "src/auth.py"\ndocs = ["docs/api.md#Login", "docs/api.md#Logout"]\n'
+    )
+
+    # Mark only Login as reviewed
+    save_review(
+        tmp_path,
+        Review(
+            code_file="src/auth.py",
+            doc_target="docs/api.md#Login",
+            reviewed_at="2026-03-17T12:00:00Z",
+            code_commit_at_review=current_commit,
+        ),
+    )
+
+    # Run list-stale - should still show Logout as stale but skip Login
+    from docsync.cli import cmd_list_stale
+
+    cmd_list_stale(Namespace(format="json", show_diff=False, diff_lines=30, changed_files=None))
+
+    captured = capsys.readouterr()
+    data = json.loads(captured.out)
+
+    # Should have 1 stale (Logout) and 1 reviewed skipped (Login)
+    assert len(data["stale"]) == 1
+    # doc_target in JSON is a dict with file and section
+    stale_doc = data["stale"][0]["doc_target"]
+    assert stale_doc["file"] == "docs/api.md"
+    assert stale_doc["section"] == "Logout"
+    assert data.get("skipped_reviewed", 0) == 1
+
+
+def test_cmd_fix_mark_reviewed_validates_file_exists(tmp_path, monkeypatch, capsys):
+    """Test that fix mark-reviewed validates the code file exists."""
+    monkeypatch.chdir(tmp_path)
+
+    # Create git repo but NO code file
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+
+    from docsync.cli import cmd_fix_mark_reviewed
+
+    result = cmd_fix_mark_reviewed(
+        Namespace(
+            code="src/nonexistent.py",
+            doc="docs/api.md",
+            reviewed_by="user",
+            format="text",
+        )
+    )
+
+    # Should fail because file doesn't exist
+    assert result == 1
+    captured = capsys.readouterr()
+    assert "Code file not found" in captured.out
+
+
+def test_cmd_fix_mark_reviewed_normalizes_paths(tmp_path, monkeypatch):
+    """Test that fix mark-reviewed normalizes paths properly."""
+    monkeypatch.chdir(tmp_path)
+
+    # Create git repo
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@test.com"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=tmp_path, capture_output=True)
+
+    # Create code file
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "auth.py").write_text("def login(): pass")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True)
+
+    from docsync.cli import cmd_fix_mark_reviewed
+
+    # Use ./prefix in paths
+    result = cmd_fix_mark_reviewed(
+        Namespace(
+            code="./src/auth.py",
+            doc="./docs/api.md",
+            reviewed_by="user",
+            format="text",
+        )
+    )
+
+    assert result == 0
+
+    # Review should be stored with normalized paths
+    reviews = load_reviews(tmp_path)
+    assert len(reviews) == 1
+    assert reviews[0].code_file == "src/auth.py"
+    assert reviews[0].doc_target == "docs/api.md"
+
+
+def test_cmd_fix_interactive_fails_on_non_tty(tmp_path, monkeypatch, capsys):
+    """Test that fix interactive fails gracefully when stdin is not a TTY."""
+    monkeypatch.chdir(tmp_path)
+
+    # Create config
+    config = tmp_path / "pyproject.toml"
+    config.write_text('[tool.docsync]\nrequire_links = ["src/**/*.py"]\n')
+
+    docsync = tmp_path / ".docsync"
+    docsync.mkdir()
+    (docsync / "links.toml").write_text("")
+
+    # Mock stdin.isatty() to return False using monkeypatch
+    import sys
+
+    from docsync.cli import cmd_fix_interactive
+
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
+    result = cmd_fix_interactive(Namespace())
+
+    assert result == 1
+    captured = capsys.readouterr()
+    assert "requires a terminal" in captured.out
+    assert "fix-mark-reviewed" in captured.out  # Should suggest alternatives
