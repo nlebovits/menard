@@ -1,5 +1,5 @@
 [project]
-name = "docsync"
+name = "menard"
 version = "0.2.0"
 description = "Keep code and documentation in sync with centralized linking and section-aware staleness detection"
 requires-python = ">=3.11"
