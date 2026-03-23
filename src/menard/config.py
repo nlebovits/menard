@@ -17,6 +17,7 @@ class DocsyncConfig:
     exempt: list[str] = field(default_factory=list)
     doc_paths: list[str] = field(default_factory=lambda: ["docs/**/*.md", "README.md"])
     exclude_docs: list[str] = field(default_factory=list)
+    brevity_exclude: list[str] = field(default_factory=list)
 
 
 def load_config(repo_root: Path) -> DocsyncConfig | None:
@@ -51,4 +52,5 @@ def load_config(repo_root: Path) -> DocsyncConfig | None:
         exempt=menard_section.get("exempt", []),
         doc_paths=menard_section.get("doc_paths", ["docs/**/*.md", "README.md"]),
         exclude_docs=menard_section.get("exclude_docs", []),
+        brevity_exclude=menard_section.get("brevity_exclude", []),
     )

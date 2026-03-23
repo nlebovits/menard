@@ -307,3 +307,38 @@ class TestCLIIntegration:
         assert "duplicates" in data
         assert "threshold" in data
         assert "sections_analyzed" in data
+
+
+class TestBrevityExclude:
+    """Tests for brevity exclusion patterns."""
+
+    def test_matches_file_pattern(self):
+        """Should match file-level patterns."""
+        from menard.cli import _matches_brevity_exclude
+
+        assert _matches_brevity_exclude("CLAUDE.md#Section", ["CLAUDE.md"])
+        assert _matches_brevity_exclude("docs/api.md#Auth", ["docs/api.md"])
+        assert not _matches_brevity_exclude("README.md#Section", ["CLAUDE.md"])
+
+    def test_matches_section_wildcard(self):
+        """Should match section wildcards like *#License."""
+        from menard.cli import _matches_brevity_exclude
+
+        assert _matches_brevity_exclude("README.md#License", ["*#License"])
+        assert _matches_brevity_exclude("docs/index.md#License", ["*#License"])
+        assert not _matches_brevity_exclude("README.md#Quick Start", ["*#License"])
+
+    def test_matches_full_section_pattern(self):
+        """Should match full file#section patterns."""
+        from menard.cli import _matches_brevity_exclude
+
+        assert _matches_brevity_exclude("README.md#Quick Start", ["README.md#Quick Start"])
+        assert not _matches_brevity_exclude("README.md#License", ["README.md#Quick Start"])
+
+    def test_matches_glob_patterns(self):
+        """Should match glob patterns."""
+        from menard.cli import _matches_brevity_exclude
+
+        assert _matches_brevity_exclude("docs/api.md#Auth", ["docs/*"])
+        assert _matches_brevity_exclude("docs/nested/file.md#Section", ["docs/**/*.md"])
+        assert not _matches_brevity_exclude("README.md#Section", ["docs/*"])

@@ -8,6 +8,7 @@ require_links = ["src/**/*.py"]  # Code files that must have doc links
 doc_paths = ["docs/**/*.md"]     # Where to look for documentation
 exclude_docs = ["**/adr/**"]     # Docs to exclude from bootstrap suggestions
 transitive_depth = 1             # Import chain depth for staleness detection
+brevity_exclude = ["*#License"]  # Sections to exclude from duplicate detection
 ```
 
 The `require_links` glob determines which code files need documentation. Files matching this pattern without a link in `links.toml` will show up in coverage reports.
@@ -19,6 +20,8 @@ The `exclude_docs` patterns prevent `menard bootstrap` from suggesting links to 
 Note: `exclude_docs` only affects bootstrap suggestions. You can still manually link to excluded docs in `links.toml`, and staleness checks will run normally. The distinction is intentional: ADRs might be legitimately linked to architecture code, but shouldn't be auto-suggested since they're historical records.
 
 Set `transitive_depth` to control how deep menard follows imports when detecting staleness. If `src/auth.py` imports `src/crypto.py`, and crypto changes, should auth docs be marked stale? With depth 1, yes. With depth 0, no.
+
+The `brevity_exclude` patterns filter results from `menard brevity` (duplicate detection). Use this for intentional duplicates like License sections mirrored across files, or entire files like CLAUDE.md that you don't want flagged. Patterns can match files (`CLAUDE.md`), sections (`*#License`), or both (`README.md#Quick Start`).
 
 ## links.toml
 

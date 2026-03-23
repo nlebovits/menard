@@ -108,3 +108,28 @@ mode = "block"
     config = load_config(tmp_path)
     assert config is not None
     assert config.exclude_docs == []
+
+
+def test_load_config_brevity_exclude(tmp_path: Path):
+    """Test loading brevity_exclude config option."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("""
+[tool.menard]
+mode = "block"
+brevity_exclude = ["CLAUDE.md", "*#License"]
+""")
+    config = load_config(tmp_path)
+    assert config is not None
+    assert config.brevity_exclude == ["CLAUDE.md", "*#License"]
+
+
+def test_load_config_brevity_exclude_default(tmp_path: Path):
+    """Test that brevity_exclude defaults to empty list."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("""
+[tool.menard]
+mode = "block"
+""")
+    config = load_config(tmp_path)
+    assert config is not None
+    assert config.brevity_exclude == []

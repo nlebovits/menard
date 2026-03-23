@@ -814,6 +814,40 @@ Review duplicates in context—not all need consolidation.
 
 **When to use:** Periodic audits, after major doc restructuring, finding content drift.
 
+**Configuration:**
+
+Exclude files or sections from duplicate detection in `pyproject.toml`:
+
+```toml
+[tool.menard]
+doc_paths = ["docs/**/*.md", "README.md"]
+
+# Exclude from brevity checks (glob patterns)
+brevity_exclude = [
+    "CLAUDE.md",           # Exclude entire file
+    "*#License",           # Exclude all License sections
+    "docs/changelog.md",   # Changelog has intentional repetition
+]
+```
+
+**Pre-commit integration:**
+
+Add to `.pre-commit-config.yaml` for automatic checks:
+
+```yaml
+- repo: local
+  hooks:
+    - id: menard-brevity
+      name: menard-brevity (advisory)
+      description: Find semantically similar documentation sections
+      entry: bash -c 'uv run menard brevity --threshold 0.95 || true'
+      language: system
+      pass_filenames: false
+      types: [markdown]
+```
+
+The `|| true` makes it advisory—reports duplicates without blocking commits.
+
 ---
 
 ## Utility Commands

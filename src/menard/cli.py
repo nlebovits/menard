@@ -1380,6 +1380,26 @@ def cmd_clean_reviewed(args: argparse.Namespace) -> int:
     return 0
 
 
+def _matches_brevity_exclude(section_key: str, exclude_patterns: list[str]) -> bool:
+    """Check if a section key matches any exclusion pattern.
+
+    Patterns can be:
+    - File paths: "CLAUDE.md", "docs/contributing.md"
+    - Section patterns: "*#License", "README.md#Quick Start"
+    - Wildcards: "docs/*", "*#License"
+    """
+    import fnmatch
+
+    for pattern in exclude_patterns:
+        if fnmatch.fnmatch(section_key, pattern):
+            return True
+        # Also check just the file part (before #)
+        file_part = section_key.split("#")[0]
+        if fnmatch.fnmatch(file_part, pattern):
+            return True
+    return False
+
+
 def cmd_brevity(args: argparse.Namespace) -> int:
     """Find semantically similar documentation sections."""
     try:
@@ -1398,6 +1418,7 @@ def cmd_brevity(args: argparse.Namespace) -> int:
     repo_root = Path.cwd()
     config = load_config(repo_root)
     doc_paths = ["**/*.md"] if config is None else config.doc_paths or ["**/*.md"]
+    brevity_exclude = [] if config is None else config.brevity_exclude or []
     model_name = args.model or "BAAI/bge-small-en-v1.5"
     threshold = args.threshold
     use_cache = not args.no_cache
@@ -1423,6 +1444,15 @@ def cmd_brevity(args: argparse.Namespace) -> int:
 
     # Find duplicates
     duplicates = find_duplicates(embeddings, threshold)
+
+    # Filter out excluded patterns
+    if brevity_exclude:
+        duplicates = [
+            d
+            for d in duplicates
+            if not _matches_brevity_exclude(d.source, brevity_exclude)
+            and not _matches_brevity_exclude(d.target, brevity_exclude)
+        ]
 
     # Output
     if args.format == "json":
