@@ -1,12 +1,34 @@
 # Agent Skills
 
-menard provides Claude Code skills for intelligent documentation management.
+menard ships Claude Code skills for intelligent documentation management. Skills are automatically available when you install menard.
+
+## Discovering Skills
+
+```bash
+menard skills              # List all available skills
+menard skills --format json  # JSON output
+```
+
+Skills can be **bundled** (shipped with menard) or **local** (in your project's `.claude/skills/` directory). Local skills with the same name override bundled ones.
+
+## Customizing Bundled Skills
+
+To customize a bundled skill:
+
+```bash
+menard skills --copy audit   # Copy to .claude/skills/audit.md
+# Edit the local copy as needed
+```
+
+Use `--force` to overwrite an existing local skill.
+
+---
 
 ## Audit Skill
 
 The audit skill analyzes documentation for trackability and suggests improvements. It scores each doc file and section on **deterministic verifiability** — how well menard can track and verify the content.
 
-Available at `.claude/skills/audit.md`.
+**Source:** Bundled with menard (customizable via `menard skills --copy audit`).
 
 ### Scoring Rubric
 

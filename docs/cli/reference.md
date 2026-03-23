@@ -472,23 +472,39 @@ Global literals:
 
 ### skills
 
-List available Claude Code skills.
+List available Claude Code skills (bundled and project-local).
 
 ```bash
-menard skills
+menard skills                 # List all skills
+menard skills --format json   # JSON output
+menard skills --copy audit    # Copy bundled skill to local for customization
+menard skills --copy audit --force  # Overwrite existing local skill
 ```
 
 **Example output:**
 
-```bash
+```
 Available Claude Code skills:
 
-  audit - Analyze documentation for trackability
-    Location: .claude/skills/audit.md
-    Usage: Ask Claude to "audit the documentation"
+  audit [bundled]
+    Analyze documentation for menard trackability and suggest improvements.
+
+To use in Claude Code:
+  Invoke via /skill-name or ask Claude to use the skill
+
+To customize a bundled skill:
+  menard skills --copy <name>
 ```
 
-**When to use:** Discovering available skills, integration with Claude Code.
+**Options:**
+
+| Option | Description |
+|--------|-------------|
+| `--format {text,json}` | Output format (default: text) |
+| `--copy NAME` | Copy bundled skill to `.claude/skills/` for customization |
+| `--force` | Overwrite existing local skill when using `--copy` |
+
+**When to use:** Discovering available skills, customizing bundled skills, integration with Claude Code.
 
 ---
 

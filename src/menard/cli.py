@@ -3,7 +3,12 @@
 import argparse
 import json
 import sys
+from importlib.resources import files
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    pass
 
 from menard._compat import tomllib
 from menard.config import load_config
@@ -1112,71 +1117,148 @@ def cmd_list_protected(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_skills(args: argparse.Namespace) -> int:
-    """List available Claude Code skills."""
-    repo_root = Path.cwd()
-    skills_dir = repo_root / ".claude" / "skills"
+def _get_bundled_skills() -> dict:
+    """Get skills shipped with the menard package.
 
+    Returns:
+        Dict mapping skill name to Traversable object.
+    """
+    try:
+        skills_pkg = files("menard").joinpath("skills")
+        return {
+            p.name.removesuffix(".md"): p for p in skills_pkg.iterdir() if p.name.endswith(".md")
+        }
+    except (FileNotFoundError, TypeError):
+        return {}
+
+
+def _get_local_skills(repo_root: Path) -> dict:
+    """Get project-local skills from .claude/skills/.
+
+    Returns:
+        Dict mapping skill name to Path object.
+    """
+    skills_dir = repo_root / ".claude" / "skills"
     if not skills_dir.exists():
+        return {}
+    return {p.stem: p for p in skills_dir.glob("*.md")}
+
+
+def _parse_skill_content(content: str, name: str) -> dict:
+    """Extract title and description from skill content."""
+    lines = content.strip().split("\n")
+    title = name
+    description = ""
+
+    for line in lines:
+        if line.startswith("# "):
+            title = line[2:].strip()
+        elif line.startswith("description:"):
+            description = line.split(":", 1)[1].strip()
+            break
+        elif not description and line.strip() and not line.startswith("#"):
+            description = line.strip()
+            break
+
+    return {
+        "title": title,
+        "description": description[:100] + "..." if len(description) > 100 else description,
+    }
+
+
+def cmd_skills(args: argparse.Namespace) -> int:
+    """List available Claude Code skills (bundled and local)."""
+    repo_root = Path.cwd()
+
+    # Handle --copy flag first
+    copy_name = getattr(args, "copy", None)
+    if copy_name:
+        return _copy_skill(repo_root, copy_name, getattr(args, "force", False))
+
+    # Gather skills from both sources (local overrides bundled)
+    bundled = _get_bundled_skills()
+    local = _get_local_skills(repo_root)
+
+    # Merge: bundled first, then local overwrites
+    all_skills_sources: dict[str, tuple[Any, str]] = {}
+    for name, source in bundled.items():
+        all_skills_sources[name] = (source, "bundled")
+    for name, source in local.items():
+        all_skills_sources[name] = (source, "local")
+
+    if not all_skills_sources:
         if args.format == "json":
-            print(json.dumps({"skills": [], "error": "No skills directory found"}))
+            print(json.dumps({"skills": []}))
         else:
-            print("No skills directory found at .claude/skills/")
+            print("No skills found.")
             print("\nSkills are Claude Code extensions that provide specialized workflows.")
             print("To add skills, create .claude/skills/<name>.md files.")
         return 0
 
-    skill_files = sorted(skills_dir.glob("*.md"))
-
-    if not skill_files:
-        if args.format == "json":
-            print(json.dumps({"skills": []}))
-        else:
-            print("No skills found in .claude/skills/")
-            print("\nTo add skills, create .claude/skills/<name>.md files.")
-        return 0
-
+    # Build skill list
     skills = []
-    for skill_path in skill_files:
-        skill_name = skill_path.stem
-        content = skill_path.read_text()
-        lines = content.strip().split("\n")
+    for name in sorted(all_skills_sources.keys()):
+        source, source_type = all_skills_sources[name]
+        content = source.read_text()
+        parsed = _parse_skill_content(content, name)
 
-        # Extract title and description from skill file
-        title = skill_name
-        description = ""
+        skill_info = {
+            "name": name,
+            "title": parsed["title"],
+            "description": parsed["description"],
+            "source": source_type,
+        }
 
-        for line in lines:
-            if line.startswith("# "):
-                title = line[2:].strip()
-            elif line.startswith("description:"):
-                description = line.split(":", 1)[1].strip()
-                break
-            elif not description and line.strip() and not line.startswith("#"):
-                description = line.strip()
-                break
+        # Add path for local skills
+        if source_type == "local":
+            skill_info["path"] = str(Path(source).relative_to(repo_root))
 
-        skills.append(
-            {
-                "name": skill_name,
-                "title": title,
-                "description": description[:100] + "..." if len(description) > 100 else description,
-                "path": str(skill_path.relative_to(repo_root)),
-            }
-        )
+        skills.append(skill_info)
 
     if args.format == "json":
         print(json.dumps({"skills": skills}, indent=2))
     else:
         print("Available Claude Code skills:\n")
         for skill in skills:
-            print(f"  {skill['name']}")
+            source_indicator = f"[{skill['source']}]"
+            print(f"  {skill['name']} {source_indicator}")
             if skill["description"]:
                 print(f"    {skill['description']}")
             print()
         print("To use in Claude Code:")
         print("  Invoke via /skill-name or ask Claude to use the skill")
+        print("\nTo customize a bundled skill:")
+        print("  menard skills --copy <name>")
 
+    return 0
+
+
+def _copy_skill(repo_root: Path, skill_name: str, force: bool = False) -> int:
+    """Copy a bundled skill to the local .claude/skills/ directory."""
+    bundled = _get_bundled_skills()
+
+    if skill_name not in bundled:
+        print(f"Skill '{skill_name}' not found in bundled skills.")
+        print(f"Available bundled skills: {', '.join(sorted(bundled.keys()))}")
+        return 1
+
+    # Create local skills directory if needed
+    local_dir = repo_root / ".claude" / "skills"
+    local_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check if local skill already exists
+    local_path = local_dir / f"{skill_name}.md"
+    if local_path.exists() and not force:
+        print(f"Local skill already exists: {local_path}")
+        print("Use --force to overwrite.")
+        return 1
+
+    # Copy content
+    content = bundled[skill_name].read_text()
+    local_path.write_text(content)
+
+    print(f"Copied '{skill_name}' to {local_path}")
+    print("You can now customize this skill locally.")
     return 0
 
 
@@ -1628,10 +1710,20 @@ def main() -> int:
     skills_parser = subparsers.add_parser(
         "skills",
         help="List available Claude Code skills",
-        description="Show Claude Code skills bundled with this project.",
+        description="Show Claude Code skills (bundled with menard and project-local).",
     )
     skills_parser.add_argument(
         "--format", choices=["text", "json"], default="text", help="Output format"
+    )
+    skills_parser.add_argument(
+        "--copy",
+        metavar="NAME",
+        help="Copy a bundled skill to .claude/skills/ for customization",
+    )
+    skills_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing local skill when using --copy",
     )
 
     # fix (interactive)
