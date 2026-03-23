@@ -615,6 +615,7 @@ def cmd_check(args: argparse.Namespace) -> int:
                 transitive_imports,
                 include_diff=show_diff,
                 max_diff_lines=diff_lines,
+                auto_generated=False,  # We already filtered out auto-generated
             )
 
             if result.is_stale:
@@ -720,6 +721,7 @@ def cmd_list_stale(args: argparse.Namespace) -> int:
                 transitive_imports,
                 include_diff=show_diff,
                 max_diff_lines=diff_lines,
+                auto_generated=False,  # We already filtered out auto-generated
             )
 
             if result.is_stale:

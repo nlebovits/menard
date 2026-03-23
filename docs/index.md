@@ -70,6 +70,9 @@ docsync bootstrap --apply
 docsync validate-links
 docsync coverage
 
+# Check for stale docs (JSON output for agents)
+docsync list-stale --format json
+
 # Set up pre-commit hook
 pre-commit install
 ```
@@ -78,21 +81,33 @@ For detailed setup instructions, see [Getting Started →](getting-started.md)
 
 ## Agent-First Design
 
-All output is designed for AI consumption. The `--format json` flag provides file paths, section names, line ranges, and git diffs—everything an agent needs to make scoped updates:
+All output is designed for AI consumption. The `--format json` flag provides structured metadata—everything an agent needs to make scoped updates:
 
 ```json
 {
   "stale": [{
     "code_file": "src/auth.py",
-    "doc_target": "docs/api.md#Authentication",
-    "section": "Authentication",
-    "line_range": [45, 89],
+    "doc_target": {
+      "file": "docs/api.md",
+      "section": "Authentication",
+      "line_range": [45, 89]
+    },
+    "code_last_modified": "2026-03-17",
+    "doc_last_modified": "2026-03-08",
+    "commits_since": [{
+      "sha": "abc123",
+      "date": "2026-03-17",
+      "message": "feat: add logout"
+    }],
+    "severity": null,
+    "auto_generated": false,
+    "suggested_action": "update",
     "reason": "Section unchanged since src/auth.py changed"
   }]
 }
 ```
 
-Deterministic staleness detection enables reliable, scoped documentation updates.
+The structured `doc_target` includes exact line ranges for precision edits. `suggested_action` tells agents whether to "update", "create", or "review" the doc section.
 
 ## License
 

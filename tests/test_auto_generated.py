@@ -382,7 +382,8 @@ docs = ["docs/tutorial.md"]
         f"Expected 1 skipped, got {output['skipped_auto_generated']}"
     )
     assert len(output["stale"]) == 1, f"Expected 1 stale, got {len(output['stale'])}"
-    assert output["stale"][0]["doc_target"] == "docs/tutorial.md"
+    # Issue #34: doc_target is now a structured object
+    assert output["stale"][0]["doc_target"]["file"] == "docs/tutorial.md"
 
 
 def test_auto_generated_with_section_links(git_repo, monkeypatch, capsys):

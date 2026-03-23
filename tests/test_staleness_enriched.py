@@ -63,24 +63,32 @@ def test_commit_info_to_dict():
 
 
 def test_staleness_result_to_dict_basic():
-    """Test StalenessResult basic serialization."""
+    """Test StalenessResult basic serialization (issue #34 enhanced format)."""
     result = StalenessResult(
         is_stale=True,
         reason="Doc unchanged since code changed",
         code_file="src/auth.py",
         doc_target="docs/api.md#Authentication",
         section="Authentication",
+        line_range=(45, 89),
+        _doc_file="docs/api.md",
     )
     data = result.to_dict()
 
     assert data["code_file"] == "src/auth.py"
-    assert data["doc_target"] == "docs/api.md#Authentication"
+    # Issue #34: doc_target is now a structured object
+    assert data["doc_target"]["file"] == "docs/api.md"
+    assert data["doc_target"]["section"] == "Authentication"
+    assert data["doc_target"]["line_range"] == [45, 89]
     assert data["reason"] == "Doc unchanged since code changed"
-    assert data["section"] == "Authentication"
+    # Issue #34: New fields
+    assert data["auto_generated"] is False
+    assert data["suggested_action"] == "update"
+    assert data["severity"] is None  # Not implemented until #29
 
 
 def test_staleness_result_to_dict_enriched():
-    """Test StalenessResult with enriched fields."""
+    """Test StalenessResult with enriched fields (issue #34 enhanced format)."""
     result = StalenessResult(
         is_stale=True,
         reason="Doc unchanged",
@@ -96,16 +104,22 @@ def test_staleness_result_to_dict_enriched():
         symbols_added=["mfa_verify", "mfa_setup"],
         symbols_removed=["old_auth"],
         code_diff="+ def new_func():",
+        _doc_file="docs/api.md",
     )
 
     data = result.to_dict(include_diff=False)
-    assert data["last_code_change"] == "2026-03-17"
+    # Issue #34: Renamed fields
+    assert data["code_last_modified"] == "2026-03-17"
     assert data["last_code_commit"] == "abc1234"
-    assert data["last_doc_update"] == "2026-03-10"
+    assert data["doc_last_modified"] == "2026-03-10"
     assert len(data["commits_since"]) == 2
     assert data["symbols_added"] == ["mfa_verify", "mfa_setup"]
     assert data["symbols_removed"] == ["old_auth"]
     assert "code_diff" not in data  # Not included when include_diff=False
+    # Issue #34: New fields
+    assert data["auto_generated"] is False
+    assert data["suggested_action"] == "update"
+    assert data["severity"] is None
 
     data_with_diff = result.to_dict(include_diff=True)
     assert data_with_diff["code_diff"] == "+ def new_func():"
@@ -273,6 +287,93 @@ def test_check_staleness_enriched_with_diff():
         )
         assert result_with_diff.code_diff is not None
         assert "logout" in result_with_diff.code_diff
+
+
+def test_issue_34_enhanced_json_format():
+    """Test enhanced JSON output format per issue #34.
+
+    Verifies the new JSON structure:
+    - doc_target is structured object with file, section, line_range
+    - code_last_modified and doc_last_modified (renamed fields)
+    - severity field (null until #29)
+    - auto_generated flag
+    - suggested_action field
+    """
+    result = StalenessResult(
+        is_stale=True,
+        reason="Code changed in commit abc123",
+        code_file="src/auth.py",
+        doc_target="docs/api.md#Authentication",
+        section="Authentication",
+        line_range=(45, 89),
+        last_code_change="2026-03-17",
+        last_code_commit="abc123",
+        last_doc_update="2026-03-08",
+        commits_since=[
+            CommitInfo(sha="abc123", date="2026-03-17", message="feat: add logout function"),
+        ],
+        auto_generated=False,
+        suggested_action="update",
+        _doc_file="docs/api.md",
+    )
+    data = result.to_dict()
+
+    # Verify doc_target is structured
+    assert isinstance(data["doc_target"], dict)
+    assert data["doc_target"]["file"] == "docs/api.md"
+    assert data["doc_target"]["section"] == "Authentication"
+    assert data["doc_target"]["line_range"] == [45, 89]
+
+    # Verify renamed timestamp fields
+    assert data["code_last_modified"] == "2026-03-17"
+    assert data["doc_last_modified"] == "2026-03-08"
+
+    # Verify commits_since structure
+    assert len(data["commits_since"]) == 1
+    assert data["commits_since"][0]["sha"] == "abc123"
+    assert data["commits_since"][0]["date"] == "2026-03-17"
+    assert data["commits_since"][0]["message"] == "feat: add logout function"
+
+    # Verify new fields from issue #34
+    assert data["severity"] is None  # Requires #29
+    assert data["auto_generated"] is False
+    assert data["suggested_action"] == "update"
+
+
+def test_issue_34_suggested_action_create():
+    """Test suggested_action is 'create' when section doesn't exist."""
+    result = StalenessResult(
+        is_stale=True,
+        reason="Section not found",
+        code_file="src/auth.py",
+        doc_target="docs/api.md#NewSection",
+        section="NewSection",
+        line_range=None,  # Section doesn't exist
+        suggested_action="create",
+        _doc_file="docs/api.md",
+    )
+    data = result.to_dict()
+
+    assert data["suggested_action"] == "create"
+    assert data["doc_target"]["line_range"] is None
+
+
+def test_issue_34_line_range_converted_to_list():
+    """Test that line_range tuple is converted to list for JSON serialization."""
+    result = StalenessResult(
+        is_stale=True,
+        reason="Doc stale",
+        code_file="src/auth.py",
+        doc_target="docs/api.md#Auth",
+        section="Auth",
+        line_range=(10, 25),
+        _doc_file="docs/api.md",
+    )
+    data = result.to_dict()
+
+    # JSON doesn't have tuples, so line_range should be a list
+    assert data["doc_target"]["line_range"] == [10, 25]
+    assert isinstance(data["doc_target"]["line_range"], list)
 
 
 def test_check_staleness_enriched_fresh_doc():

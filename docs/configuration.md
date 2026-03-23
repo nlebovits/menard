@@ -95,10 +95,12 @@ This works transitively too. If `src/auth.py` imports `src/crypto.py`, and crypt
 
 When docs are stale, docsync shows detailed information to help you understand what changed:
 
-- **Dates**: When code and docs were last updated
+- **Dates**: When code and docs were last updated (`code_last_modified`, `doc_last_modified`)
 - **Commits**: Recent commits that modified the code since docs were updated
 - **Symbol changes**: Functions and classes added or removed (via AST analysis)
 - **Code diff**: The actual git diff (with `--show-diff` flag)
+- **Line range**: Exact lines to edit in the doc file
+- **Suggested action**: `update`, `create`, or `review`
 
 ```bash
 $ docsync list-stale
@@ -114,7 +116,35 @@ $ docsync list-stale
       Removed: legacy_auth
 ```
 
-The JSON output includes all this metadata for machine consumption—perfect for AI agents making targeted doc updates.
+The JSON output includes all this metadata in a structured format for machine consumption:
+
+```json
+{
+  "stale": [{
+    "code_file": "src/auth.py",
+    "doc_target": {
+      "file": "docs/api.md",
+      "section": "Authentication",
+      "line_range": [45, 89]
+    },
+    "code_last_modified": "2026-03-17",
+    "doc_last_modified": "2026-03-10",
+    "commits_since": [{
+      "sha": "abc1234",
+      "date": "2026-03-17",
+      "message": "feat: add MFA support"
+    }],
+    "symbols_added": ["mfa_verify", "mfa_setup"],
+    "symbols_removed": ["legacy_auth"],
+    "severity": null,
+    "auto_generated": false,
+    "suggested_action": "update",
+    "reason": "Section unchanged since src/auth.py changed"
+  }]
+}
+```
+
+The structured `doc_target` with `line_range` enables AI agents to make precise, scoped edits.
 
 Symbol extraction results are cached in `.docsync/symbols_cache.json` for performance. The cache uses content-based hashing, so identical file contents always return cached results. Old entries are automatically evicted to keep the cache under 500 entries.
 

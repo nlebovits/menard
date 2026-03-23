@@ -95,8 +95,10 @@ Other docs.
 
         # Should detect stale Authentication section
         assert len(output["stale"]) == 1
-        assert output["stale"][0]["doc_target"] == "docs/api.md#Authentication"
-        assert output["stale"][0]["section"] == "Authentication"
+        # Issue #34: doc_target is now a structured object
+        assert output["stale"][0]["doc_target"]["file"] == "docs/api.md"
+        assert output["stale"][0]["doc_target"]["section"] == "Authentication"
+        assert output["stale"][0]["doc_target"]["line_range"] is not None
 
         # Update the Authentication section
         (repo_root / "docs" / "api.md").write_text(
