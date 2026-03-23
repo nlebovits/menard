@@ -32,6 +32,7 @@ mode = "warn"
 require_links = ["src/**/*.py"]
 """)
     config = load_config(tmp_path)
+    assert config is not None
     assert config.mode == "warn"
     assert config.transitive_depth == 1  # default
     assert config.require_links == ["src/**/*.py"]
@@ -51,6 +52,7 @@ exempt = ["**/*_test.py", "**/test_*.py"]
 doc_paths = ["docs/**/*.md", "README.md", "guides/**/*.txt"]
 """)
     config = load_config(tmp_path)
+    assert config is not None
     assert config.mode == "warn"
     assert config.transitive_depth == 2
     assert config.enforce_symmetry is False
@@ -70,6 +72,7 @@ another_unknown = 123
 """)
     # Should not raise an error
     config = load_config(tmp_path)
+    assert config is not None
     assert config.mode == "block"
 
 

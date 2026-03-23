@@ -4,6 +4,7 @@ import logging
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 from docsync.sections import parse_markdown_section
 from docsync.toml_links import LinkTarget
@@ -45,9 +46,9 @@ class StalenessResult:
     symbols_removed: list[str] = field(default_factory=list)
     code_diff: str | None = None  # Raw diff (only if requested)
 
-    def to_dict(self, include_diff: bool = False) -> dict:
+    def to_dict(self, include_diff: bool = False) -> dict[str, Any]:
         """Convert to dictionary for JSON output."""
-        result = {
+        result: dict[str, Any] = {
             "code_file": self.code_file,
             "doc_target": self.doc_target,
             "reason": self.reason,

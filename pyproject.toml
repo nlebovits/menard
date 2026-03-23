@@ -65,8 +65,26 @@ dev = [
     "pytest>=8.0",
     "pytest-cov>=4.0",
     "ruff==0.15.6",
+    "ty==0.0.24",
 ]
 
+
+[tool.ty.environment]
+# Set the target Python version
+python-version = "3.11"
+
+# Configure the Python environment for module discovery
+python = ".venv"
+
+# Set module search paths
+root = ["./src"]
+
+[tool.ty.src]
+# Include specific directories for type checking
+include = ["src", "tests"]
+
+# Exclude directories from checking
+exclude = []
 
 [tool.docsync]
 mode = "block"
