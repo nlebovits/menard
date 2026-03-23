@@ -1850,13 +1850,12 @@ def main() -> int:
         "--format", choices=["text", "json"], default="text", help="Output format"
     )
 
-    # brevity - "Brevity is the soul of wit" - find semantic duplicates
+    # brevity - find semantic duplicates
     brevity_parser = subparsers.add_parser(
         "brevity",
         help="Find semantically similar documentation sections",
         description="Discover potential duplicate content across documentation using embeddings. "
-        "This is a discovery tool, not an enforcer - it surfaces potential duplicates for review. "
-        '"Brevity is the soul of wit." - Polonius, Hamlet',
+        "This is a discovery tool, not an enforcer - it surfaces potential duplicates for review.",
     )
     brevity_parser.add_argument(
         "--threshold",

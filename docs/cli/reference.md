@@ -717,8 +717,6 @@ Later, if `cli.py` changes again (a real feature), it will be flagged stale agai
 
 Find semantically similar documentation sections using local embeddings.
 
-> *"Brevity is the soul of wit."* — Polonius, Hamlet
-
 ```bash
 menard brevity [--threshold N] [--format text|json] [--model NAME] [--no-cache]
 ```
