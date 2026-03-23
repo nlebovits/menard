@@ -1,3 +1,13 @@
+## v0.3.0 (2026-03-23)
+
+### Feat
+
+- ship audit skill with menard package
+- integrate Codecov with coverage thresholds
+- add --all flag to check and check-protected commands
+- add exclude_docs config to filter bootstrap suggestions
+- add Python 3.10 support
+
 ## v0.2.0 (2026-03-17)
 
 ### BREAKING CHANGES
