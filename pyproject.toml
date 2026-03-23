@@ -95,6 +95,7 @@ enforce_symmetry = true
 require_links = ["src/menard/**/*.py"]
 exempt = []
 doc_paths = ["docs/**/*.md", "README.md", "mkdocs.yml", "CLAUDE.md"]
+exclude_docs = ["CLAUDE.md"]  # Project instructions, not living docs
 
 [tool.commitizen]
 name = "cz_conventional_commits"

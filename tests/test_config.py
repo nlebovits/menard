@@ -83,3 +83,28 @@ def test_load_config_invalid_toml(tmp_path: Path):
     config = load_config(tmp_path)
     # Should return None without crashing
     assert config is None
+
+
+def test_load_config_exclude_docs(tmp_path: Path):
+    """Test loading exclude_docs config option."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("""
+[tool.menard]
+mode = "block"
+exclude_docs = ["**/adr/**", "**/plans/**"]
+""")
+    config = load_config(tmp_path)
+    assert config is not None
+    assert config.exclude_docs == ["**/adr/**", "**/plans/**"]
+
+
+def test_load_config_exclude_docs_default(tmp_path: Path):
+    """Test that exclude_docs defaults to empty list."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text("""
+[tool.menard]
+mode = "block"
+""")
+    config = load_config(tmp_path)
+    assert config is not None
+    assert config.exclude_docs == []

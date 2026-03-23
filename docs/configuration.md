@@ -5,10 +5,18 @@
 ```toml
 [tool.menard]
 require_links = ["src/**/*.py"]  # Code files that must have doc links
+doc_paths = ["docs/**/*.md"]     # Where to look for documentation
+exclude_docs = ["**/adr/**"]     # Docs to exclude from bootstrap suggestions
 transitive_depth = 1             # Import chain depth for staleness detection
 ```
 
 The `require_links` glob determines which code files need documentation. Files matching this pattern without a link in `links.toml` will show up in coverage reports.
+
+The `doc_paths` patterns specify where menard looks for documentation files.
+
+The `exclude_docs` patterns prevent `menard bootstrap` from suggesting links to certain docs. This is useful for excluding static/historical documents like ADRs (Architectural Decision Records) or plans that record past decisions rather than living documentation that should track code changes.
+
+Note: `exclude_docs` only affects bootstrap suggestions. You can still manually link to excluded docs in `links.toml`, and staleness checks will run normally. The distinction is intentional: ADRs might be legitimately linked to architecture code, but shouldn't be auto-suggested since they're historical records.
 
 Set `transitive_depth` to control how deep menard follows imports when detecting staleness. If `src/auth.py` imports `src/crypto.py`, and crypto changes, should auth docs be marked stale? With depth 1, yes. With depth 0, no.
 
@@ -189,6 +197,14 @@ menard bootstrap --apply
 ```
 
 This uses filename matching (`src/auth.py` → `docs/auth.md`), content analysis (grep docs for code file references), and import graphs to propose links. Review suggestions carefully—bootstrap can't reliably infer links for human-facing docs like tutorials.
+
+Use `exclude_docs` in your config to prevent bootstrap from suggesting links to static documents:
+
+```toml
+[tool.menard]
+doc_paths = ["docs/**/*.md"]
+exclude_docs = ["**/adr/**", "**/plans/**", "**/decisions/**"]
+```
 
 ## Validation and Coverage
 
