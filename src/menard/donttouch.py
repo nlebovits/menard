@@ -368,30 +368,32 @@ def _diff_touches_lines(hunks: list[tuple[int, int]], section_range: tuple[int, 
 
 
 def _get_staged_content(repo_root: Path, file: str) -> str | None:
-    """Get staged content of a file."""
+    """Get staged content of a file. Returns None for binary files."""
     try:
         result = subprocess.run(
             ["git", "show", f":{file}"],
             cwd=repo_root,
             capture_output=True,
-            text=True,
             check=True,
         )
-        return result.stdout
+        return result.stdout.decode("utf-8")
     except subprocess.CalledProcessError:
+        return None
+    except UnicodeDecodeError:
         return None
 
 
 def _get_head_content(repo_root: Path, file: str) -> str | None:
-    """Get HEAD content of a file."""
+    """Get HEAD content of a file. Returns None for binary files."""
     try:
         result = subprocess.run(
             ["git", "show", f"HEAD:{file}"],
             cwd=repo_root,
             capture_output=True,
-            text=True,
             check=True,
         )
-        return result.stdout
+        return result.stdout.decode("utf-8")
     except subprocess.CalledProcessError:
+        return None
+    except UnicodeDecodeError:
         return None
