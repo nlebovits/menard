@@ -70,9 +70,9 @@ dev = [
     "numpy>=1.24",  # For testing duplicates module
     "pytest>=8.0",
     "pytest-cov>=4.0",
-    "ruff==0.15.7",
+    "ruff==0.15.8",
     "tomli>=2.0",  # For type checking on Python 3.11+
-    "ty==0.0.25",
+    "ty==0.0.27",
 ]
 
 
