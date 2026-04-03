@@ -1,6 +1,6 @@
 [project]
 name = "menard"
-version = "0.3.0"
+version = "0.4.0"
 description = "Keep code and documentation in sync with centralized linking and section-aware staleness detection"
 requires-python = ">=3.10"
 license = "Apache-2.0"
@@ -104,7 +104,7 @@ exclude_docs = ["CLAUDE.md"]  # Project instructions, not living docs
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.3.0"
+version = "0.4.0"
 version_files = ["pyproject.toml:^version"]
 tag_format = "v$version"
 update_changelog_on_bump = true

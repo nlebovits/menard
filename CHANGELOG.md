@@ -1,3 +1,18 @@
+## v0.4.0 (2026-04-03)
+
+### Feat
+
+- **skills**: add phases to audit skill and create compress skill
+- auto-gitignore cache files when creating .menard directory
+- add brevity_exclude config and pre-commit integration
+- add semantic duplicate detection (brevity command)
+
+### Fix
+
+- **tests**: isolate git environment in donttouch tests
+- **staleness**: use commit order for section staleness detection
+- **donttouch**: handle binary files in protected content checks
+
 ## v0.3.0 (2026-03-23)
 
 ### Feat
