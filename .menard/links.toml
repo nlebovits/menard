@@ -8,7 +8,7 @@ auto_generated = true
 
 [[link]]
 code = "src/menard/cli.py"
-docs = ["docs/index.md#Quick Start"]
+docs = ["docs/index.md#Core Use Cases"]
 
 # Configuration → configuration docs
 [[link]]
@@ -38,7 +38,7 @@ docs = ["docs/configuration.md#links.toml"]
 # Hook → getting started + index
 [[link]]
 code = "src/menard/hook.py"
-docs = ["docs/getting-started.md", "docs/index.md#1. Track Doc Sync"]
+docs = ["docs/getting-started.md", "docs/index.md#1. Track Doc Drift"]
 
 # Donttouch → configuration + index
 [[link]]
@@ -49,3 +49,28 @@ docs = ["docs/configuration.md#donttouch", "docs/index.md#2. Flag Protected Cont
 [[link]]
 code = "src/menard/coverage.py"
 docs = ["docs/configuration.md#Validation and Coverage"]
+
+# Graph construction → staleness detection
+[[link]]
+code = "src/menard/graph.py"
+docs = ["docs/configuration.md#Staleness Detection"]
+
+# Import analysis → staleness detection (transitive)
+[[link]]
+code = "src/menard/imports.py"
+docs = ["docs/configuration.md#Staleness Detection"]
+
+# Cache management → staleness detection
+[[link]]
+code = "src/menard/cache.py"
+docs = ["docs/configuration.md#Staleness Detection"]
+
+# Brevity (duplicate detection) → configuration
+[[link]]
+code = "src/menard/brevity.py"
+docs = ["docs/configuration.md#pyproject.toml"]
+
+# Reviewed records → fix commands
+[[link]]
+code = "src/menard/reviewed.py"
+docs = ["docs/configuration.md#Commands"]

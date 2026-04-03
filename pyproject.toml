@@ -98,7 +98,7 @@ mode = "block"
 transitive_depth = 1
 enforce_symmetry = true
 require_links = ["src/menard/**/*.py"]
-exempt = []
+exempt = ["src/menard/_compat.py", "src/menard/__init__.py"]
 doc_paths = ["docs/**/*.md", "README.md", "mkdocs.yml", "CLAUDE.md"]
 exclude_docs = ["CLAUDE.md"]  # Project instructions, not living docs
 
